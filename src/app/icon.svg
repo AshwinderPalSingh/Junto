@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .t { fill: #0a0a0a; } .f { fill: #ffffff; } .s { stroke: #ffffff; }
+    @media (prefers-color-scheme: dark) { .t { fill: #ffffff; } .f { fill: #0a0a0a; } .s { stroke: #0a0a0a; } }
+  </style>
+  <rect class="t" width="32" height="32"/>
+  <g transform="translate(4 4) scale(0.75) translate(-0.5 1.5)">
+    <rect class="f" x="3" y="9" width="17" height="17"/>
+    <rect class="s" x="12" y="4" width="17" height="17" fill="none" stroke-width="2"/>
+    <rect class="t" x="12" y="9" width="8" height="12"/>
+    <rect class="f" x="13" y="10" width="6" height="10" fill-opacity="0.35"/>
+  </g>
+</svg>

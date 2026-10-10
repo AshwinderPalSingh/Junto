@@ -1,0 +1,500 @@
+/* Only scan src/ for class names. */
+@import "tailwindcss" source("../");
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ═══════════════════════════ Junto design system ═══════════════════════════
+   Neutral surfaces, rounded controls, and softly frosted glass. */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 20px;
+  --radius-3xl: 28px;
+  --radius-4xl: 36px;
+
+  --animate-glass-in: glass-in 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-pulse-square: pulse-square 2.2s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+  --animate-shimmer: shimmer 1.8s ease-in-out infinite;
+  --animate-sweep: sweep 7s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  --animate-float: float 9s ease-in-out infinite;
+}
+
+:root {
+  --radius: 8px;
+  --background: #f1f3f2;
+  --foreground: #202321;
+  --card: rgb(255 255 255 / 0.84);
+  --card-foreground: #0a0a0a;
+  --popover: rgb(255 255 255 / 0.82);
+  --popover-foreground: #0a0a0a;
+  --primary: #202321;
+  --primary-foreground: #fafafa;
+  --secondary: rgb(0 0 0 / 0.045);
+  --secondary-foreground: #0a0a0a;
+  --muted: rgb(0 0 0 / 0.045);
+  --muted-foreground: #656b68;
+  --accent: rgb(0 0 0 / 0.06);
+  --accent-foreground: #0a0a0a;
+  --destructive: #c4161c;
+  --border: rgb(0 0 0 / 0.1);
+  --input: rgb(0 0 0 / 0.16);
+  --ring: rgb(0 0 0 / 0.55);
+  --success: #28634e;
+  --success-foreground: #ffffff;
+  --warning: #956a1b;
+  --chart-1: #0a0a0a;
+  --chart-2: #6e6e73;
+  --chart-3: #a1a1a6;
+  --chart-4: #d1d1d6;
+  --chart-5: #3a3a3c;
+
+  /* Glass material */
+  --glass-fill: rgb(255 255 255 / 0.74);
+  --glass-fill-strong: rgb(255 255 255 / 0.94);
+  --glass-gloss: rgb(255 255 255 / 0.65);
+  --glass-edge: rgb(0 0 0 / 0.08);
+  --glass-highlight: rgb(255 255 255 / 0.95);
+  --glass-inner: rgb(255 255 255 / 0.35);
+  --glass-shadow: rgb(0 0 0 / 0.1);
+  --glass-shadow-near: rgb(0 0 0 / 0.04);
+  --glass-sheen: rgb(255 255 255 / 0.9);
+
+  /* Ambient backdrop */
+  --ambient-a: rgb(0 0 0 / 0.11);
+  --ambient-b: rgb(0 0 0 / 0.07);
+  --ambient-c: rgb(0 0 0 / 0.05);
+  --grid-line: rgb(0 0 0 / 0.045);
+}
+
+.dark {
+  --background: #151817;
+  --foreground: #f5f5f7;
+  --card: rgb(28 28 30 / 0.55);
+  --card-foreground: #f5f5f7;
+  --popover: rgb(28 28 30 / 0.82);
+  --popover-foreground: #f5f5f7;
+  --primary: #f5f5f7;
+  --primary-foreground: #000000;
+  --secondary: rgb(255 255 255 / 0.06);
+  --secondary-foreground: #f5f5f7;
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: #a4aaa7;
+  --accent: rgb(255 255 255 / 0.09);
+  --accent-foreground: #f5f5f7;
+  --destructive: #ff453a;
+  --border: rgb(255 255 255 / 0.12);
+  --input: rgb(255 255 255 / 0.18);
+  --ring: rgb(255 255 255 / 0.55);
+  --success: #a1d5bb;
+  --success-foreground: #151817;
+  --warning: #e7c379;
+  --chart-1: #f5f5f7;
+  --chart-2: #8e8e93;
+  --chart-3: #636366;
+  --chart-4: #3a3a3c;
+  --chart-5: #c7c7cc;
+
+  --glass-fill: rgb(44 44 46 / 0.42);
+  --glass-fill-strong: rgb(36 36 38 / 0.78);
+  --glass-gloss: rgb(255 255 255 / 0.07);
+  --glass-edge: rgb(255 255 255 / 0.12);
+  --glass-highlight: rgb(255 255 255 / 0.2);
+  --glass-inner: rgb(255 255 255 / 0.04);
+  --glass-shadow: rgb(0 0 0 / 0.6);
+  --glass-shadow-near: rgb(0 0 0 / 0.35);
+  --glass-sheen: rgb(255 255 255 / 0.16);
+
+  --ambient-a: rgb(255 255 255 / 0.13);
+  --ambient-b: rgb(255 255 255 / 0.08);
+  --ambient-c: rgb(255 255 255 / 0.06);
+  --grid-line: rgb(255 255 255 / 0.05);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss03";
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-semibold;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  }
+}
+
+/* ═══════════════════════════ Glass ═══════════════════════════ */
+
+/* Panels and cards: translucent fill, background blur, top gloss, specular edge. */
+@utility glass {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--glass-fill);
+  background-image: linear-gradient(180deg, var(--glass-gloss) 0%, transparent 38%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--glass-edge);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    inset 0 0 0 1px var(--glass-inner),
+    0 1px 2px var(--glass-shadow-near),
+    0 22px 48px -26px var(--glass-shadow);
+}
+
+/* Menus, dialogs, toasts: denser glass so text stays crisp. */
+@utility glass-strong {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--glass-fill-strong);
+  background-image: linear-gradient(180deg, var(--glass-gloss) 0%, transparent 32%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  backdrop-filter: blur(30px) saturate(190%);
+  border: 1px solid var(--glass-edge);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    0 30px 70px -30px var(--glass-shadow);
+}
+
+/* A specular light that sweeps across the glass on hover/focus. */
+@utility glass-sheen {
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 32%, var(--glass-sheen) 50%, transparent 68%);
+    opacity: 0.55;
+    transform: translateX(-130%);
+    transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  &:hover::after,
+  &:focus-visible::after {
+    transform: translateX(130%);
+  }
+}
+
+/* Lift on hover for interactive glass. */
+@utility glass-lift {
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 260ms ease,
+    background-color 260ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 0 var(--glass-highlight),
+      inset 0 0 0 1px var(--glass-inner),
+      0 2px 4px var(--glass-shadow-near),
+      0 30px 60px -28px var(--glass-shadow);
+  }
+  &:active {
+    transform: translateY(0) scale(0.995);
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility label-caps {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* ═══════════════════════════ Ambient backdrop ═══════════════════════════
+   Quiet backdrop for work-focused screens. */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--background);
+}
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--glass-gloss), transparent 55%);
+}
+.ambient > i {
+  display: none;
+}
+
+/* ═══════════════════════════ Motion ═══════════════════════════ */
+
+/* Scroll reveal: frosted glass coming into focus (see views/components/reveal.tsx).
+   Progressive enhancement: without scroll-driven animations the content is simply visible. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry calc(2% + var(--reveal-shift, 0px)) entry calc(85% + var(--reveal-shift, 0px));
+    }
+  }
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    filter: blur(12px);
+    translate: 0 22px;
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    translate: 0 0;
+  }
+}
+
+@keyframes glass-in {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(14vmax, 10vmax, 0) scale(1.15);
+  }
+}
+@keyframes drift-b {
+  to {
+    transform: translate3d(-16vmax, 6vmax, 0) scale(0.9);
+  }
+}
+@keyframes drift-c {
+  to {
+    transform: translate3d(10vmax, -12vmax, 0) scale(1.1);
+  }
+}
+
+@keyframes pulse-square {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-140%) skewX(-12deg);
+  }
+  55%,
+  100% {
+    transform: translateX(260%) skewX(-12deg);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 250% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ambient > i {
+    animation: none !important;
+  }
+}
+
+/* Typography and material shared by the existing application screens. */
+body * {
+  letter-spacing: 0;
+}
+[data-slot="button"][data-variant="outline"],
+[data-slot="button"][data-variant="secondary"],
+[role="radiogroup"][aria-label="Theme"] {
+  border-radius: 999px;
+}
+.app-sidebar {
+  border-radius: 24px;
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 40px -30px var(--glass-shadow);
+}
+.app-topbar {
+  border-radius: 0;
+}
+.app-tabbar {
+  border-radius: 28px;
+}
+.auth-backdrop {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  isolation: isolate;
+}
+.auth-backdrop::before {
+  content: "";
+  position: fixed;
+  inset: -12px;
+  z-index: -1;
+  background: linear-gradient(#21343b6b, #152a35a3), url("/images/campus-walk.jpg") center / cover;
+  filter: blur(7px);
+}
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: min(1120px, 100%);
+  min-height: min(760px, calc(100dvh - 64px));
+  padding: 14px;
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(28px);
+  border: 1px solid var(--glass-highlight);
+  border-radius: 32px;
+  box-shadow: 0 24px 70px -30px #0007;
+}
+.auth-story, .auth-form {
+  border-radius: 22px;
+}
+.auth-form {
+  background: var(--card);
+}
+.auth-form [data-slot="input"] {
+  height: 54px;
+  border-color: transparent;
+  padding-inline: 16px;
+}
+.auth-form h1 {
+  font-weight: 500;
+}
+.auth-form [data-slot="input-otp-group"] {
+  gap: 5px;
+}
+.auth-form [data-slot="input-otp-slot"] {
+  border: 1px solid var(--input);
+  border-radius: 6px;
+}
+.auth-form > div > div > div > span:first-child {
+  border-radius: 50%;
+}
+@media (min-width: 1024px) {
+  .app-topbar { border-radius: 999px; }
+}
+@media (max-width: 1023px) {
+  .auth-layout { grid-template-columns: 1fr; max-width: 520px; min-height: min(680px, calc(100dvh - 48px)); }
+  .auth-backdrop { padding: 24px; }
+}
+@media (max-width: 480px) {
+  .auth-backdrop { padding: 12px; }
+  .auth-layout { padding: 7px; border-radius: 24px; min-height: calc(100dvh - 24px); }
+  .auth-form { border-radius: 18px; padding-inline: 22px; }
+  .auth-form [data-slot="input-otp-group"] { gap: 4px; }
+  .auth-form [data-slot="input-otp-slot"] { width: 32px; height: 46px; }
+}
+
+/* ═══════════════════════════ Charts ═══════════════════════════ */
+/* A two-step neutral ramp, validated: monotone lightness, one hue,
+   lighter step at least 3:1 against the surface in both modes. */
+.viz-root {
+  --viz-accent: #0a0a0a;
+  --viz-context: #8a8a8a;
+  --viz-track: #e8e8e8;
+  --viz-grid: rgb(0 0 0 / 0.07);
+  --viz-axis: rgb(0 0 0 / 0.22);
+}
+.dark .viz-root {
+  --viz-accent: #f5f5f5;
+  --viz-context: #7a7a7a;
+  --viz-track: #2a2a2a;
+  --viz-grid: rgb(255 255 255 / 0.08);
+  --viz-axis: rgb(255 255 255 / 0.24);
+}
