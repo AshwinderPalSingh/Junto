@@ -14,7 +14,18 @@ const optional = z
 const schema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   /** Public origin, e.g. https://junto.example.com (used in emails and links). */
-  APP_URL: z.url().default("http://localhost:3000"),
+  APP_URL: z.url().refine((value) => {
+    const url = new URL(value);
+    return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password &&
+      (!process.env.VERCEL || url.protocol === "https:") &&
+      (url.protocol === "https:" || ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || process.env.NODE_ENV !== "production");
+  }, "Use an HTTPS public URL, or HTTP localhost for local development.").default(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000",
+  ),
+  CAMPUS_IDENTITY_PROVIDER: optional.pipe(z.enum(["google", "microsoft"]).optional()),
+  CAMPUS_OIDC_CLIENT_ID: optional,
+  CAMPUS_OIDC_CLIENT_SECRET: optional,
+  CAMPUS_MICROSOFT_TENANT_ID: optional,
   /** postgres://user:password@host:5432/database */
   DATABASE_URL: optional,
   /** Max connections in this server's pool. */

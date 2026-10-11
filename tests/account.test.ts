@@ -69,7 +69,7 @@ describe("sign-in codes", () => {
   it("discards a code that never reached the inbox, so a retry isn't blocked", async () => {
     const email = "bounced@thapar.edu";
     const code = await LoginCodeModel.issue(email);
-    await LoginCodeModel.discardUnused(email);
+    await LoginCodeModel.discardUnused(email, code);
     await expect(LoginCodeModel.verify(email, code)).rejects.toMatchObject({ code: "expired" });
     await expect(LoginCodeModel.issue(email)).resolves.toMatch(/^\d+$/);
   });

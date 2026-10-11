@@ -52,7 +52,7 @@ function campusEmail(raw: unknown): { ok: true; email: string } | { ok: false; s
 
 /** Issues and emails a code. Returns an error state, or null once the email is on its way. */
 async function issueCode(email: string, intent: CodeIntent, pending?: PendingPassword) {
-  const limit = rateLimit(`otp:ip:${await requestIp()}`, 20, 15 * 60_000);
+  const limit = await rateLimit(`otp:ip:${await requestIp()}`, 20, 15 * 60_000);
   if (!limit.ok) return failure("Too many attempts from this network. Try again in a few minutes.");
   let code: string;
   try {
@@ -65,7 +65,7 @@ async function issueCode(email: string, intent: CodeIntent, pending?: PendingPas
     await sendLoginCode(email, code, intent);
   } catch (error) {
     // The code never arrived: drop it so the member can retry straight away.
-    await LoginCodeModel.discardUnused(email);
+    await LoginCodeModel.discardUnused(email, code);
     if (isDomainError(error)) return failure(error.message);
     console.error("[auth] could not send code", error);
     return failure("We couldn't send the code. Try again in a minute.");
@@ -96,9 +96,11 @@ export async function signInWithPassword(_prev: ActionState, formData: FormData)
   const parsed = signInSchema.safeParse({ email: formData.get("email"), password: formData.get("password") });
   if (!parsed.success) return invalid(parsed.error);
   const { email, password } = parsed.data;
+  const checked = campusEmail(email);
+  if (!checked.ok) return checked.state;
   if (
-    !rateLimit(`pw:ip:${await requestIp()}`, 30, 15 * 60_000).ok ||
-    !rateLimit(`pw:email:${email}`, 10, 15 * 60_000).ok
+    !(await rateLimit(`pw:ip:${await requestIp()}`, 30, 15 * 60_000)).ok ||
+    !(await rateLimit(`pw:email:${email}`, 10, 15 * 60_000)).ok
   ) {
     return failure("Too many attempts. Wait a few minutes, or sign in with an email code.");
   }
@@ -154,6 +156,10 @@ export async function startPasswordFlow(
   const checked = campusEmail(parsed.data.email);
   if (!checked.ok) return checked.state;
 
+  if (!(await rateLimit(`pwflow:ip:${await requestIp()}`, 10, 15 * 60_000)).ok ||
+      !(await rateLimit(`pwflow:email:${checked.email}`, 5, 15 * 60_000)).ok) {
+    return failure("Too many attempts. Try again in a few minutes.");
+  }
   const flowToken = randomToken();
   const error = await issueCode(checked.email, intent, {
     passwordHash: await hashPassword(parsed.data.password),
@@ -194,7 +200,9 @@ export async function verifyCode(_prev: ActionState, formData: FormData): Promis
   const parsed = verifySchema.safeParse({ email: formData.get("email"), code: formData.get("code") });
   if (!parsed.success) return failure("Enter the 6-digit code from your email.");
   const { email, code } = parsed.data;
-  const limit = rateLimit(`verify:${email}`, 15, 15 * 60_000);
+  const checked = campusEmail(email);
+  if (!checked.ok) return checked.state;
+  const limit = await rateLimit(`verify:${email}`, 15, 15 * 60_000);
   if (!limit.ok) return failure("Too many tries. Ask for a new code in a few minutes.");
   let pending: Awaited<ReturnType<typeof LoginCodeModel.verify>>;
   try {

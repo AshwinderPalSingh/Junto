@@ -21,7 +21,7 @@ import { acceptedMembers, memberOf, PlanModel, type PlanBundle } from "@/models/
 import { ReportModel } from "@/models/report.model";
 import { ReputationModel } from "@/models/reputation.model";
 import { ShareLinkModel } from "@/models/share-link.model";
-import { displayName, type User } from "@/models/user.model";
+import { displayName, firstNameOf, type User } from "@/models/user.model";
 import { chatAccess, deliverChatMessage } from "./chat.controller";
 import { requireMember } from "./guards";
 
@@ -82,7 +82,7 @@ export async function createPlan(_prev: ActionState, formData: FormData): Promis
   const parsed = createSchema.safeParse(formToObject(formData, ["allowedGenders"]));
   if (!parsed.success) return invalid(parsed.error);
   const input = parsed.data;
-  if (!rateLimit(`plan:create:${host.id}`, 10, 60 * 60_000).ok) {
+  if (!(await rateLimit(`plan:create:${host.id}`, 10, 60 * 60_000)).ok) {
     return failure("You've posted a lot in the last hour. Try again a little later.");
   }
 
@@ -142,7 +142,7 @@ export async function requestToJoin(planId: string, _prev: ActionState, formData
   if (!UUID.test(planId)) return failure("Plan not found.");
   const note = noteSchema.safeParse(formData.get("note") ?? undefined);
   if (!note.success) return invalid(note.error);
-  if (!rateLimit(`join:${joiner.id}`, 20, 60 * 60_000).ok) return failure("Slow down a little and try again soon.");
+  if (!(await rateLimit(`join:${joiner.id}`, 20, 60 * 60_000)).ok) return failure("Slow down a little and try again soon.");
 
   const result = await attempt(() => PlanModel.request(planId, joiner, note.data, new Date()));
   if (!result.ok) return result.state;
@@ -155,7 +155,7 @@ export async function requestToJoin(planId: string, _prev: ActionState, formData
     data: actorData(bundle, joiner),
   });
   refresh();
-  return success(`Request sent. ${bundle.host.firstName} will get a notification.`);
+  return success(`Request sent. ${firstNameOf(bundle.host)} will get a notification.`);
 }
 
 export async function withdrawRequest(planId: string, _prev: ActionState, _formData: FormData): Promise<ActionState> {
@@ -190,7 +190,7 @@ export async function decideRequest(planId: string, _prev: ActionState, formData
   refresh();
   return success(
     accepted
-      ? `${guest.firstName} is in. Say hi in the plan's group chat.`
+      ? `${firstNameOf(guest)} is in. Say hi in the plan's group chat.`
       : "Declined. They'll just see a gentle “not this time”.",
   );
 }

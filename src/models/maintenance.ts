@@ -1,4 +1,6 @@
 import "server-only";
+import { purgeRateLimits } from "@/lib/rate-limit";
+import { IdentityModel } from "./identity.model";
 import { LoginCodeModel, SessionModel } from "./auth.model";
 import { AvailabilityModel } from "./availability.model";
 import { NotificationModel } from "./notification.model";
@@ -70,7 +72,7 @@ export async function runMaintenance(now = new Date()) {
     }
     if (now.getTime() - state.lastPurge > 10 * 60_000) {
       state.lastPurge = now.getTime();
-      await Promise.all([SessionModel.purge(now), LoginCodeModel.purge(now), AvailabilityModel.purge(now)]);
+      await Promise.all([SessionModel.purge(now), LoginCodeModel.purge(now), AvailabilityModel.purge(now), purgeRateLimits(now), IdentityModel.purge(now)]);
     }
     return {
       skipped: false as const,

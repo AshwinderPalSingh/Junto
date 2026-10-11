@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@/views/ui/spinner";
 import { Textarea } from "@/views/ui/textarea";
 import type { OnboardingVM } from "@/views/view-models";
+import { CampusIdentity } from "@/views/components/campus-identity";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
@@ -43,13 +44,8 @@ export function AboutForm({
   return (
     <form action={formAction} className="space-y-8">
       {returnTo && <input type="hidden" name="return" value={returnTo} />}
-      <div className="flex items-start gap-3 border-b border-border pb-5">
-        <ShieldCheck className="mt-1 size-5 shrink-0 text-success" />
-        <div>
-          <p className="text-xs text-muted-foreground">Campus identity</p>
-          <p className="mt-1 font-semibold">{[profile.firstName, profile.lastName].filter(Boolean).join(" ")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">From your verified Thapar email. Names cannot be edited.</p>
-        </div>
+      <div className="border-b border-border pb-5">
+        <CampusIdentity fullName={profile.fullName} connected={profile.identityConnected} available={profile.identityAvailable} />
       </div>
 
       <FieldSet>

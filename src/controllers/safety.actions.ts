@@ -8,6 +8,7 @@ import { failure, formToObject, invalid, success, type ActionState } from "@/lib
 import { BlockModel } from "@/models/block.model";
 import { ReportModel } from "@/models/report.model";
 import { UserModel } from "@/models/user.model";
+import { PlanModel, memberOf } from "@/models/plan.model";
 import { requireMember } from "./guards";
 
 /** POST handlers for reporting and blocking. Always available, never paywalled. */
@@ -34,6 +35,17 @@ export async function reportMember(_prev: ActionState, formData: FormData): Prom
   const { reportedId, planId, category, details, alsoBlock } = parsed.data;
   if (reportedId === user.id) return failure("You can't report yourself.");
   if (!(await UserModel.findById(reportedId))) return failure("That member no longer exists.");
+  if (category === "no_show") {
+    const bundle = planId ? await PlanModel.bundle(planId) : null;
+    const now = Date.now();
+    if (!bundle || bundle.plan.endsAt.getTime() > now ||
+      now > bundle.plan.endsAt.getTime() + RULES.feedbackWindowHours * 60 * 60_000 ||
+      ["cancelled", "expired"].includes(bundle.plan.status) ||
+      memberOf(bundle, user.id)?.participation.status !== "accepted" ||
+      memberOf(bundle, reportedId)?.participation.status !== "accepted") {
+      return failure("No-show reports are only available for people booked on the same finished plan.");
+    }
+  }
   const since = new Date(Date.now() - 24 * 60 * 60_000);
   if ((await ReportModel.countSince(user.id, since)) >= RULES.reportsPerDay) {
     return failure("You've sent a lot of reports today. If you're in danger, contact campus security right away.");

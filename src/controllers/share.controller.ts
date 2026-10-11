@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { acceptedMembers, PlanModel } from "@/models/plan.model";
 import { ShareLinkModel } from "@/models/share-link.model";
-import { displayName } from "@/models/user.model";
+import { firstNameOf } from "@/models/user.model";
 import type { PlanStatusVM, ShareVM } from "@/views/view-models";
 import { presentActivity, presentSpot } from "./presenters";
 
@@ -25,14 +25,14 @@ export const ShareController = {
     if (!sharer) notFound();
     return {
       now: now.toISOString(),
-      sharer: displayName(sharer),
+      sharer: firstNameOf(sharer),
       activity: presentActivity(bundle.plan.activity),
       spot: presentSpot(bundle.plan.spot),
       startsAt: bundle.plan.startsAt.toISOString(),
       endsAt: bundle.plan.endsAt.toISOString(),
       people: acceptedMembers(bundle)
         .filter((m) => m.user.id !== sharer.id)
-        .map((m) => displayName(m.user)),
+        .map((m) => firstNameOf(m.user)),
       status: bundle.plan.status as PlanStatusVM,
     };
   },

@@ -87,6 +87,10 @@ export const users = pgTable(
     status: userStatusEnum("status").notNull().default("active"),
     firstName: text("first_name"),
     lastName: text("last_name"),
+    verifiedFullName: text("verified_full_name"),
+    identityProvider: text("identity_provider"),
+    identitySubject: text("identity_subject"),
+    identityVerifiedAt: ts("identity_verified_at"),
     /** Locked once onboarding is complete; changes go through an admin. */
     gender: genderEnum("gender"),
     year: text("year"),
@@ -118,8 +122,26 @@ export const users = pgTable(
     updatedAt: ts("updated_at").notNull().defaultNow(),
     lastSeenAt: ts("last_seen_at"),
   },
-  (t) => [index("users_status_idx").on(t.status)],
+  (t) => [index("users_status_idx").on(t.status), uniqueIndex("users_identity_idx").on(t.identityProvider, t.identitySubject)],
 );
+
+/** Shared, hashed rate-limit keys work across serverless instances. */
+export const rateLimits = pgTable("rate_limits", {
+  keyHash: text("key_hash").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: ts("reset_at").notNull(),
+}, (t) => [index("rate_limits_expiry_idx").on(t.resetAt)]);
+
+/** Short-lived profile-link transactions, bound to the initiating session. */
+export const identityFlows = pgTable("identity_flows", {
+  stateHash: text("state_hash").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sessionHash: text("session_hash").notNull(),
+  verifier: text("verifier").notNull(),
+  nonce: text("nonce").notNull(),
+  provider: text("provider").notNull(),
+  expiresAt: ts("expires_at").notNull(),
+}, (t) => [index("identity_flows_expiry_idx").on(t.expiresAt)]);
 
 const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array }>({
   dataType: () => "bytea",

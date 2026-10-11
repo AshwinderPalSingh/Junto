@@ -22,11 +22,11 @@ export const checkInOpen = (startsAt: DateInput, endsAt: DateInput, now: DateInp
   return n >= addMinutes(startsAt, -RULES.checkInOpensMinutes).getTime() && n <= toDate(endsAt).getTime();
 };
 
-/** Feedback opens once the meetup has been under way for a bit and stays open for a few days. */
+/** Feedback opens after the meetup finishes; arrivals cannot be called no-shows while it is live. */
 export const feedbackOpen = (startsAt: DateInput, endsAt: DateInput, now: DateInput) => {
   const n = toDate(now).getTime();
   return (
-    n >= addMinutes(startsAt, 10).getTime() &&
+    n >= toDate(endsAt).getTime() &&
     n <= addMinutes(endsAt, RULES.feedbackWindowHours * 60).getTime()
   );
 };

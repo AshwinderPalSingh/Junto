@@ -21,7 +21,7 @@ import {
   type SendCheck,
   type StartChatCheck,
 } from "@/models/rules/chat";
-import { displayName, isOnboarded, type User } from "@/models/user.model";
+import { displayName, firstNameOf, isOnboarded, type User } from "@/models/user.model";
 import type { ChatThreadVM, ConversationListItemVM, ConversationVM, InboxVM } from "@/views/view-models";
 import { requireMember } from "./guards";
 import { presentActivity, presentChatMessage, presentPhoto } from "./presenters";
@@ -88,7 +88,7 @@ export async function chatAccess(viewer: User, conversationId: string, opts: { s
       BlockModel.hasBlocked(peer.id, viewer.id),
     ]);
     if (blockedMe) return null;
-    const send = canSendDirect(chatPerson(viewer), { status: chatPerson(peer).status, firstName: peer.firstName ?? "this member" }, {
+    const send = canSendDirect(chatPerson(viewer), { status: chatPerson(peer).status, firstName: firstNameOf(peer) }, {
       blockedByMe,
       blockedMe,
     });
@@ -152,7 +152,7 @@ export async function deliverChatMessage(access: ChatAccess, message: ChatMessag
             message: presentChatMessage(message, sender, recipient.id),
           });
           // One push per chat every 30 seconds is plenty; the device replaces it by tag.
-          if (localListenerCount(recipient.id) === 0 && rateLimit(`chatpush:${recipient.id}:${message.conversationId}`, 1, 30_000).ok) {
+          if (localListenerCount(recipient.id) === 0 && (await rateLimit(`chatpush:${recipient.id}:${message.conversationId}`, 1, 30_000)).ok) {
             const subs = await PushSubscriptionModel.forUser(recipient.id);
             for (const sub of subs) {
               const result = await sendPush(sub, {
@@ -177,7 +177,7 @@ function presentInboxItem(entry: InboxEntry, viewer: User, now: Date): Conversat
     last && lastSender
       ? {
           body: preview(last.body),
-          senderName: last.senderId === viewer.id ? "You" : (lastSender.firstName ?? "Member"),
+          senderName: last.senderId === viewer.id ? "You" : displayName(lastSender),
           mine: last.senderId === viewer.id,
           at: last.createdAt.toISOString(),
         }
@@ -236,7 +236,7 @@ export const ChatController = {
         photo: presentPhoto(peer),
         activity: null,
         members: [],
-        peer: { id: peer.id, firstName: peer.firstName ?? "this member", blockedByMe: access.blockedByMe },
+        peer: { id: peer.id, firstName: firstNameOf(peer), blockedByMe: access.blockedByMe },
         thread,
       };
     }

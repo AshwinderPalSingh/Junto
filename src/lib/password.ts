@@ -8,7 +8,7 @@ import { z } from "zod";
  * hash, so they can be raised later without breaking existing passwords.
  * Tests may lower the cost with PASSWORD_HASH_LOG_N.
  */
-const LOG_N = Number(process.env.PASSWORD_HASH_LOG_N ?? 15);
+const LOG_N = process.env.NODE_ENV === "test" ? Number(process.env.PASSWORD_HASH_LOG_N ?? 15) : 15;
 const PARAMS = { N: 2 ** LOG_N, r: 8, p: 3 };
 const KEY_LENGTH = 64;
 const MAX_MEMORY = 64 * 1024 * 1024;
@@ -28,12 +28,18 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [scheme, n, r, p, salt, hash] = stored.split("$");
-  if (scheme !== "scrypt" || !salt || !hash) return false;
+  const parts = stored.split("$");
+  const [scheme, n, r, p, salt, hash] = parts;
+  const minN = process.env.NODE_ENV === "test" ? 1024 : 32768;
+  const N = Number(n);
+  if (parts.length !== 6 || scheme !== "scrypt" || !salt || !hash ||
+      !/^[A-Za-z0-9_-]{22}$/.test(salt) || !/^[A-Za-z0-9_-]{86}$/.test(hash) ||
+      !Number.isInteger(N) || N < minN || N > 32768 || (N & (N - 1)) !== 0 || r !== "8" || p !== "3") return false;
   const expected = Buffer.from(hash, "base64url");
+  if (expected.length !== KEY_LENGTH || Buffer.from(salt, "base64url").length !== 16) return false;
   try {
     const key = await scrypt(password, Buffer.from(salt, "base64url"), expected.length, {
-      N: Number(n),
+      N,
       r: Number(r),
       p: Number(p),
     });

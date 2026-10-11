@@ -16,57 +16,61 @@ export type PendingPassword =
 export const LoginCodeModel = {
   async issue(email: string, pending?: PendingPassword) {
     const db = await getDb();
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - RULES.otp.windowMinutes * 60_000);
-    const [recent] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(loginCodes)
-      .where(and(eq(loginCodes.email, email), gt(loginCodes.createdAt, windowStart)));
-    if ((recent?.n ?? 0) >= RULES.otp.maxPerWindow) {
-      throw new DomainError("Too many codes requested. Wait a few minutes and try again.", "rate_limited");
-    }
-    const [last] = await db
-      .select({ createdAt: loginCodes.createdAt })
-      .from(loginCodes)
-      .where(eq(loginCodes.email, email))
-      .orderBy(desc(loginCodes.createdAt))
-      .limit(1);
-    const waitMs = last ? last.createdAt.getTime() + RULES.otp.resendAfterSeconds * 1000 - now.getTime() : 0;
-    if (waitMs > 0) {
-      throw new DomainError(`Please wait ${Math.ceil(waitMs / 1000)} seconds before asking for another code.`, "too_soon");
-    }
-    let password: { passwordHash: string | null; flowHash: string | null } = { passwordHash: null, flowHash: null };
-    if (pending && "passwordHash" in pending) {
-      password = pending;
-    } else if (pending) {
-      const [previous] = await db
-        .select({ passwordHash: loginCodes.passwordHash, flowHash: loginCodes.flowHash })
+    return db.transaction(async (tx) => {
+      // Serializes code issuance for one mailbox across all server instances.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${email}))`);
+      const now = new Date();
+      const windowStart = new Date(now.getTime() - RULES.otp.windowMinutes * 60_000);
+      const [recent] = await tx
+        .select({ n: sql<number>`count(*)::int` })
         .from(loginCodes)
-        .where(
-          and(
-            eq(loginCodes.email, email),
-            isNull(loginCodes.consumedAt),
-            gt(loginCodes.expiresAt, now),
-            eq(loginCodes.flowHash, pending.carryFlowHash),
-          ),
-        )
+        .where(and(eq(loginCodes.email, email), gt(loginCodes.createdAt, windowStart)));
+      if ((recent?.n ?? 0) >= RULES.otp.maxPerWindow) {
+        throw new DomainError("Too many codes requested. Wait a few minutes and try again.", "rate_limited");
+      }
+      const [last] = await tx
+        .select({ createdAt: loginCodes.createdAt })
+        .from(loginCodes)
+        .where(eq(loginCodes.email, email))
         .orderBy(desc(loginCodes.createdAt))
         .limit(1);
-      if (previous) password = previous;
-    }
-    await db
-      .update(loginCodes)
-      .set({ consumedAt: now })
-      .where(and(eq(loginCodes.email, email), isNull(loginCodes.consumedAt)));
-    const code = randomDigits(RULES.otp.length);
-    await db.insert(loginCodes).values({
-      email,
-      codeHash: sha256(`${email}:${code}`),
-      expiresAt: new Date(now.getTime() + RULES.otp.ttlMinutes * 60_000),
-      passwordHash: password.passwordHash,
-      flowHash: password.flowHash,
+      const waitMs = last ? last.createdAt.getTime() + RULES.otp.resendAfterSeconds * 1000 - now.getTime() : 0;
+      if (waitMs > 0) {
+        throw new DomainError(`Please wait ${Math.ceil(waitMs / 1000)} seconds before asking for another code.`, "too_soon");
+      }
+      let password: { passwordHash: string | null; flowHash: string | null } = { passwordHash: null, flowHash: null };
+      if (pending && "passwordHash" in pending) {
+        password = pending;
+      } else if (pending) {
+        const [previous] = await tx
+          .select({ passwordHash: loginCodes.passwordHash, flowHash: loginCodes.flowHash })
+          .from(loginCodes)
+          .where(
+            and(
+              eq(loginCodes.email, email),
+              isNull(loginCodes.consumedAt),
+              gt(loginCodes.expiresAt, now),
+              eq(loginCodes.flowHash, pending.carryFlowHash),
+            ),
+          )
+          .orderBy(desc(loginCodes.createdAt))
+          .limit(1);
+        if (previous) password = previous;
+      }
+      await tx
+        .update(loginCodes)
+        .set({ consumedAt: now })
+        .where(and(eq(loginCodes.email, email), isNull(loginCodes.consumedAt)));
+      const code = randomDigits(RULES.otp.length);
+      await tx.insert(loginCodes).values({
+        email,
+        codeHash: sha256(`${email}:${code}`),
+        expiresAt: new Date(now.getTime() + RULES.otp.ttlMinutes * 60_000),
+        passwordHash: password.passwordHash,
+        flowHash: password.flowHash,
+      });
+      return code;
     });
-    return code;
   },
 
   async verify(email: string, code: string) {
@@ -101,9 +105,9 @@ export const LoginCodeModel = {
   },
 
   /** Removes an unused code that never reached the member (e.g. the email failed to send). */
-  async discardUnused(email: string) {
+  async discardUnused(email: string, code: string) {
     const db = await getDb();
-    await db.delete(loginCodes).where(and(eq(loginCodes.email, email), isNull(loginCodes.consumedAt)));
+    await db.delete(loginCodes).where(and(eq(loginCodes.email, email), eq(loginCodes.codeHash, sha256(`${email}:${code}`)), isNull(loginCodes.consumedAt)));
   },
 
   async purge(now: Date) {

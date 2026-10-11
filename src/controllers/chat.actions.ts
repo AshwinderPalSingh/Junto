@@ -8,7 +8,7 @@ import { failure, invalid, success, type ActionState } from "@/lib/action";
 import { rateLimit } from "@/lib/rate-limit";
 import { ChatModel } from "@/models/chat.model";
 import { startChatMessage } from "@/models/rules/chat";
-import { UserModel } from "@/models/user.model";
+import { firstNameOf, UserModel } from "@/models/user.model";
 import type { ChatMessageVM } from "@/views/view-models";
 import { chatAccess, deliverChatMessage, directChatChecks, UUID } from "./chat.controller";
 import { requireMember } from "./guards";
@@ -43,7 +43,7 @@ export async function startChat(targetId: string, _prev: ActionState, _formData:
   const existing = await ChatModel.findDirect(viewer.id, target.id);
   if (!existing) {
     const check = (await directChatChecks(viewer, [target])).get(target.id)!;
-    if (!check.ok) return failure(startChatMessage(check, target.firstName ?? "This member"));
+    if (!check.ok) return failure(startChatMessage(check, firstNameOf(target)));
     const since = new Date(Date.now() - 24 * 60 * 60_000);
     if ((await ChatModel.countStartedSince(viewer.id, since)) >= RULES.chat.newChatsPerDay) {
       return failure("You've started a lot of new chats today. Try again tomorrow.");
@@ -63,7 +63,7 @@ export async function sendChatMessage(
   const access = await chatAccess(viewer, conversationId);
   if (!access) return failure("This chat isn't available any more.");
   if (!access.send.ok) return failure(access.send.message);
-  if (!rateLimit(`chat:${viewer.id}`, RULES.chat.perMinute, 60_000).ok) {
+  if (!(await rateLimit(`chat:${viewer.id}`, RULES.chat.perMinute, 60_000)).ok) {
     return failure("You're sending messages very fast. Wait a moment and try again.");
   }
   const message = await ChatModel.send({

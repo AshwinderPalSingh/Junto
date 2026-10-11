@@ -181,6 +181,7 @@ export type ProfileVM = {
 
 export type SettingsVM = {
   email: string;
+  identity: { fullName: string | null; connected: boolean; available: boolean };
   gender: string;
   companionGenders: string[];
   groupPref: string;
@@ -199,8 +200,9 @@ export type OnboardingVM = {
   step: OnboardingStep;
   completed: OnboardingStep[];
   profile: {
-    firstName: string;
-    lastName: string;
+    fullName: string | null;
+    identityConnected: boolean;
+    identityAvailable: boolean;
     year: string;
     branch: string;
     bio: string;

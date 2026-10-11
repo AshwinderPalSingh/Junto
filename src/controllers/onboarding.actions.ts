@@ -68,7 +68,7 @@ export async function uploadPhoto(
   const file = formData.get("photo");
   if (!(file instanceof File) || file.size === 0) return failure("Choose a photo first.");
   if (file.size > RULES.photo.maxBytes) return failure("That photo is over 5 MB. Try a smaller one.");
-  if (!rateLimit(`photo:${user.id}`, 12, 60 * 60_000).ok) {
+  if (!(await rateLimit(`photo:${user.id}`, 12, 60 * 60_000)).ok) {
     return failure("Too many uploads. Try again in a little while.");
   }
   try {

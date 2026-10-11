@@ -1,10 +1,36 @@
-/** A verified mailbox provides a display name, not proof of a legal name. */
-export function campusIdentity(email: string): { firstName: string; lastName: string | null } {
-  const local = email.trim().toLowerCase().split("@")[0].split("+")[0];
-  const name = local
-    .replace(/(?:[._-](?:be|bt|btech|me|mtech|phd|mba|msc|bsc)\d[a-z0-9]*|(?:be|bt|btech|me|mtech|phd|mba|msc|bsc)\d{2,}[a-z0-9]*|\d+)$/i, "")
-    .split(/[._\-\d]+/)
-    .filter((part) => /^[a-z]+$/.test(part))
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1));
-  return { firstName: name[0] ?? "Campus member", lastName: name.slice(1).join(" ") || null };
+export type UniversityProfile = {
+  provider: "google" | "microsoft";
+  subject: string;
+  fullName: string;
+  givenName: string;
+  familyName: string | null;
+};
+
+function profileText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim().normalize("NFC");
+  return text.length > 0 && text.length <= 128 && !/[\p{Cc}\p{Cf}]/u.test(text) ? text : null;
+}
+
+/** Only call with claims validated by the OIDC client, never browser-submitted claims. */
+export function universityProfile(
+  provider: UniversityProfile["provider"], claims: Record<string, unknown>,
+  expectedEmail: string, domains: string[], tenant?: string,
+): UniversityProfile {
+  const email = typeof claims.email === "string" ? claims.email.trim().toLowerCase() : "";
+  const domain = email.split("@")[1];
+  const fullName = profileText(claims.name);
+  if (email !== expectedEmail.toLowerCase() || !domains.includes(domain) || !fullName ||
+      typeof claims.sub !== "string" || !claims.sub || claims.sub.length > 255) {
+    throw new Error("Use the same university account you verified in Junto.");
+  }
+  if (provider === "google" && (claims.email_verified !== true || claims.hd !== domain)) {
+    throw new Error("A verified university Google Workspace account is required.");
+  }
+  if (provider === "microsoft" && (!tenant || claims.tid !== tenant)) {
+    throw new Error("Use your university's Microsoft tenant.");
+  }
+  return { provider, subject: claims.sub, fullName,
+    givenName: profileText(claims.given_name) ?? fullName,
+    familyName: profileText(claims.family_name) };
 }

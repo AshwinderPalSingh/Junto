@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { APP } from "@/config/app";
 import { themeBootScript } from "@/views/theme-script";
@@ -30,7 +31,8 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html
       lang="en"
@@ -40,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         {/* Applies the saved light/dark choice before first paint. */}
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body className="min-h-full">
         {/* Drifting light behind the glass surfaces. */}

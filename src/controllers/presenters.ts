@@ -1,12 +1,11 @@
 import "server-only";
 import { getBadge } from "@/config/badges";
-import { campusIdentity } from "@/lib/campus-identity";
 import { getActivity, getSpot } from "@/config/campus";
 import { interestOf, VIBES, yearLabel } from "@/config/profile";
 import { acceptedGuests, memberOf, pendingRequests, type PlanBundle } from "@/models/plan.model";
 import { ReputationModel } from "@/models/reputation.model";
 import { emptyReputation, type Reputation } from "@/models/rules/reliability";
-import { displayName, hasPhoto, type User } from "@/models/user.model";
+import { displayName, firstNameOf, hasPhoto, type User } from "@/models/user.model";
 import type { ChatMessageRow } from "@/models/db/schema";
 import type {
   ActivityVM,
@@ -32,8 +31,8 @@ export type PresentContext = {
 };
 
 export const initialsOf = (u: User) => {
-  const identity = u.status === "deleted" ? u : campusIdentity(u.email);
-  return `${identity.firstName?.charAt(0) ?? "?"}${identity.lastName?.charAt(0) ?? ""}`.toUpperCase();
+  if (!u.identityVerifiedAt) return "?";
+  return `${u.firstName?.charAt(0) ?? "?"}${u.lastName?.charAt(0) ?? ""}`.toUpperCase();
 };
 
 export const avatarUrl = (u: User) =>
@@ -75,7 +74,7 @@ export function presentMember(user: User, ctx: PresentContext): MemberVM {
   return {
     id: user.id,
     name: displayName(user),
-    firstName: user.status === "deleted" ? "Deleted" : campusIdentity(user.email).firstName,
+    firstName: firstNameOf(user),
     year: yearLabel(user.year),
     branch: user.branch,
     bio: user.bio,

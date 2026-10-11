@@ -25,6 +25,7 @@ import {
 import { Field, FieldError, FieldLabel } from "@/views/ui/field";
 import { Input } from "@/views/ui/input";
 import type { SettingsVM } from "@/views/view-models";
+import { CampusIdentity } from "@/views/components/campus-identity";
 import { PushToggle } from "./push-toggle";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -78,7 +79,7 @@ function UnblockRow({ person, action }: { person: SettingsVM["blocked"][number];
   );
 }
 
-function DeleteAccount({ action }: { action: Action }) {
+function DeleteAccount({ action, hasPassword }: { action: Action; hasPassword: boolean }) {
   const [state, formAction] = useActionState(action, idleState);
   return (
     <Dialog>
@@ -94,6 +95,10 @@ function DeleteAccount({ action }: { action: Action }) {
           </DialogDescription>
         </DialogHeader>
         <form action={formAction} className="space-y-3">
+          {hasPassword && <Field>
+            <FieldLabel htmlFor="delete-current-password">Current password</FieldLabel>
+            <PasswordInput id="delete-current-password" name="current" autoComplete="current-password" required />
+          </Field>}
           <Input name="confirm" placeholder="Type DELETE to confirm" autoComplete="off" className="h-11" />
           <FormMessage state={state} />
           <SubmitButton variant="destructive" size="lg" className="w-full">
@@ -207,6 +212,7 @@ export function SettingsView({ vm, actions }: { vm: SettingsVM; actions: Setting
       <PageHeader eyebrow="Account" title="Settings" />
 
       <Section title="Account">
+        <div className="mb-5"><CampusIdentity {...vm.identity} /></div>
         <dl className="grid gap-px border border-border bg-border text-sm sm:grid-cols-2">
           <div className="bg-background/70 p-3.5 backdrop-blur-md">
             <dt className="label-caps text-[0.6rem] text-muted-foreground">Email</dt>
@@ -293,7 +299,7 @@ export function SettingsView({ vm, actions }: { vm: SettingsVM; actions: Setting
       )}
 
       <Section title="Danger zone" danger>
-        <DeleteAccount action={actions.deleteAccount} />
+        <DeleteAccount action={actions.deleteAccount} hasPassword={vm.hasPassword} />
       </Section>
     </div>
   );

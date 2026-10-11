@@ -15,6 +15,7 @@ import {
 } from "./db/schema";
 import { AvailabilityModel } from "./availability.model";
 import { BlockModel } from "./block.model";
+import { firstNameOf } from "./user.model";
 import {
   groupPreferenceAllows,
   isMutuallyCompatible,
@@ -365,7 +366,7 @@ export const PlanModel = {
         throw new DomainError("This request can't be accepted with the current group.", "incompatible");
       }
       const clash = await findOverlap(tx, request.user.id, bundle.plan.startsAt, bundle.plan.endsAt, planId);
-      if (clash) throw new DomainError(`${request.user.firstName} is already booked at that time.`, "overlap");
+      if (clash) throw new DomainError(`${firstNameOf(request.user)} is already booked at that time.`, "overlap");
 
       await tx
         .update(participations)

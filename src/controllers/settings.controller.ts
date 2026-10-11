@@ -1,4 +1,5 @@
 import "server-only";
+import { campusIdentityConfigured } from "@/lib/campus-oidc";
 import { getVapidPublicKey } from "@/lib/push";
 import { BlockModel } from "@/models/block.model";
 import { PushSubscriptionModel } from "@/models/push-subscription.model";
@@ -17,6 +18,8 @@ export const SettingsController = {
     ]);
     return {
       email: user.email,
+      identity: { fullName: user.identityVerifiedAt ? user.verifiedFullName : null,
+        connected: Boolean(user.identityVerifiedAt), available: campusIdentityConfigured() },
       gender: user.gender ?? "",
       companionGenders: user.companionGenders,
       groupPref: user.groupPref,

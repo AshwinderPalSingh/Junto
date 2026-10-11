@@ -2,6 +2,7 @@ import "server-only";
 import { getActivity } from "@/config/campus";
 import { partOfDay } from "@/lib/time";
 import { AvailabilityModel } from "@/models/availability.model";
+import { firstNameOf } from "@/models/user.model";
 import { needsFeedbackFrom, PlanModel, pendingRequests } from "@/models/plan.model";
 import type { BoardVM } from "@/views/view-models";
 import { requireMember } from "./guards";
@@ -35,7 +36,7 @@ export const BoardController = {
     const feedbackDue = mine.past.find((b) => needsFeedbackFrom(b, viewer.id, now));
     return {
       now: now.toISOString(),
-      firstName: viewer.firstName ?? "there",
+      firstName: viewer.identityVerifiedAt ? firstNameOf(viewer) : "there",
       greeting: GREETINGS[partOfDay(now)],
       welcome: params.welcome === "1",
       freeCount,

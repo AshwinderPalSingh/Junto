@@ -1,8 +1,10 @@
 import "server-only";
-import { and, desc, eq, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db/client";
-import { campusIdentity } from "@/lib/campus-identity";
-import { photos, users, type ChatPolicy, type UserRow } from "./db/schema";
+import type { UniversityProfile } from "@/lib/campus-identity";
+import { photos, sessions, users, type ChatPolicy, type UserRow } from "./db/schema";
+import { sha256 } from "@/lib/crypto";
+import { DomainError } from "@/lib/errors";
 
 export type User = UserRow;
 
@@ -27,15 +29,14 @@ export const hasPhoto = (user: Pick<User, "photoUpdatedAt" | "photoRejectedAt">)
 
 /** A member is fully set up once they have identity, preferences and their one photo. */
 export function isOnboarded(user: User): boolean {
-  return Boolean(user.onboardedAt && user.firstName && user.gender && hasPhoto(user));
+  return Boolean(user.onboardedAt && user.gender && hasPhoto(user));
 }
 
-export const displayName = (user: Pick<User, "firstName" | "lastName"> & Partial<Pick<User, "email" | "status">>) => {
-  const identity = user.email && user.status !== "deleted" ? campusIdentity(user.email) : user;
-  return [identity.firstName ?? "Member", identity.lastName ? `${identity.lastName.charAt(0).toUpperCase()}.` : ""]
-    .filter(Boolean)
-    .join(" ");
-};
+export const displayName = (user: Pick<User, "verifiedFullName" | "identityVerifiedAt" | "status">) =>
+  user.status === "deleted" ? "Deleted member" : user.identityVerifiedAt && user.verifiedFullName ? user.verifiedFullName : "Campus member";
+
+export const firstNameOf = (user: User) =>
+  user.status === "deleted" ? "Deleted member" : user.identityVerifiedAt ? user.firstName ?? displayName(user) : "Campus member";
 
 export const UserModel = {
   async findById(id: string) {
@@ -59,23 +60,26 @@ export const UserModel = {
   /** Signs in an existing member or creates a brand-new one. */
   async findOrCreate(email: string, role: "member" | "admin") {
     const db = await getDb();
-    await db.insert(users).values({ email, role, ...campusIdentity(email) }).onConflictDoNothing({ target: users.email });
+    await db.insert(users).values({ email, role }).onConflictDoNothing({ target: users.email });
     const user = await UserModel.findByEmail(email);
     if (!user) throw new Error("Could not create user");
     if (role === "admin" && user.role !== "admin") {
       await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
       user.role = "admin";
     }
-    return UserModel.syncIdentity(user);
+    return user;
   },
 
-  async syncIdentity(user: User): Promise<User> {
-    if (user.status === "deleted") return user;
-    const identity = campusIdentity(user.email);
-    if (user.firstName === identity.firstName && user.lastName === identity.lastName) return user;
+  async setVerifiedIdentity(id: string, profile: UniversityProfile) {
     const db = await getDb();
-    await db.update(users).set({ ...identity, updatedAt: new Date() }).where(eq(users.id, user.id));
-    return { ...user, ...identity };
+    const [updated] = await db.update(users).set({
+      firstName: profile.givenName, lastName: profile.familyName, verifiedFullName: profile.fullName,
+      identityProvider: profile.provider, identitySubject: profile.subject, identityVerifiedAt: new Date(), updatedAt: new Date(),
+    }).where(and(eq(users.id, id), eq(users.status, "active"), or(
+      sql`${users.identitySubject} is null`,
+      and(eq(users.identityProvider, profile.provider), eq(users.identitySubject, profile.subject)),
+    ))).returning({ id: users.id });
+    if (!updated) throw new Error("This account is already connected to a different university profile.");
   },
 
   async saveProfile(id: string, input: ProfileInput, gender?: "woman" | "man" | "nonbinary") {
@@ -85,7 +89,7 @@ export const UserModel = {
     const { year, branch, bio, interests, vibe } = input;
     await db
       .update(users)
-      .set({ year, branch, bio, interests, vibe, ...campusIdentity(user.email), ...(gender ? { gender } : {}), updatedAt: new Date() })
+      .set({ year, branch, bio, interests, vibe, ...(gender ? { gender } : {}), updatedAt: new Date() })
       .where(eq(users.id, id));
   },
 
@@ -136,22 +140,36 @@ export const UserModel = {
       .where(eq(users.id, id));
   },
 
+  /** Compare-and-swap the verified current hash and revoke other devices in the same transaction. */
+  async changePassword(id: string, expectedHash: string | null, passwordHash: string, keepToken: string) {
+    const db = await getDb();
+    await db.transaction(async (tx) => {
+      const [changed] = await tx.update(users).set({ passwordHash, passwordUpdatedAt: new Date(),
+        failedLogins: 0, lockedUntil: null, updatedAt: new Date(),
+      }).where(and(eq(users.id, id), eq(users.status, "active"),
+        expectedHash === null ? isNull(users.passwordHash) : eq(users.passwordHash, expectedHash),
+      )).returning({ id: users.id });
+      if (!changed) throw new DomainError("Your account changed while this form was open. Refresh and try again.");
+      await tx.delete(sessions).where(and(eq(sessions.userId, id), ne(sessions.tokenHash, sha256(keepToken))));
+    });
+  },
+
   /** A wrong password. After LOGIN_LOCK.attempts in a row, password sign-in pauses for a while. */
   async recordFailedLogin(id: string) {
     const db = await getDb();
+    const now = new Date();
+    const currentTime = sql`${now.toISOString()}::timestamptz`;
+    const expiry = sql`${new Date(now.getTime() + LOGIN_LOCK.minutes * 60_000).toISOString()}::timestamptz`;
+    const nextCount = sql`case when ${users.lockedUntil} <= ${currentTime} then 1 else least(${users.failedLogins} + 1, ${LOGIN_LOCK.attempts}) end`;
     const [row] = await db
       .update(users)
-      .set({ failedLogins: sql`${users.failedLogins} + 1` })
+      .set({ failedLogins: nextCount, lockedUntil: sql`case
+        when ${users.lockedUntil} > ${currentTime} then ${users.lockedUntil}
+        when (${nextCount}) >= ${LOGIN_LOCK.attempts} then ${expiry}
+        else null end` })
       .where(eq(users.id, id))
-      .returning({ failedLogins: users.failedLogins });
-    if ((row?.failedLogins ?? 0) >= LOGIN_LOCK.attempts) {
-      await db
-        .update(users)
-        .set({ failedLogins: 0, lockedUntil: new Date(Date.now() + LOGIN_LOCK.minutes * 60_000) })
-        .where(eq(users.id, id));
-      return { locked: true };
-    }
-    return { locked: false };
+      .returning({ lockedUntil: users.lockedUntil });
+    return { locked: Boolean(row?.lockedUntil && row.lockedUntil > now) };
   },
 
   async clearFailedLogins(id: string) {
@@ -217,6 +235,22 @@ export const UserModel = {
           status: "deleted",
           firstName: "Deleted",
           lastName: null,
+          verifiedFullName: null,
+          identityProvider: null,
+          identitySubject: null,
+          identityVerifiedAt: null,
+          passwordHash: null,
+          passwordUpdatedAt: null,
+          failedLogins: 0,
+          lockedUntil: null,
+          gender: null,
+          year: null,
+          vibe: null,
+          companionGenders: [],
+          groupPref: "both",
+          chatPolicy: "nobody",
+          isAdult: false,
+          lastSeenAt: null,
           bio: null,
           interests: [],
           photoUpdatedAt: null,

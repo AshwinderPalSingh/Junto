@@ -1,4 +1,5 @@
 import "server-only";
+import { campusIdentityConfigured } from "@/lib/campus-oidc";
 import { redirect } from "next/navigation";
 import { hasPhoto, isOnboarded, type User } from "@/models/user.model";
 import type { OnboardingStep, OnboardingVM } from "@/views/view-models";
@@ -9,7 +10,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = ["about", "preferences", "phot
 
 export function completedSteps(user: User): OnboardingStep[] {
   const done: OnboardingStep[] = [];
-  if (user.firstName && user.gender && user.year && user.branch && user.interests.length > 0) done.push("about");
+  if (user.gender && user.year && user.branch && user.interests.length > 0) done.push("about");
   if (user.companionGenders.length > 0) done.push("preferences");
   if (hasPhoto(user)) done.push("photo");
   if (user.guidelinesAcceptedAt && user.onboardedAt) done.push("guidelines");
@@ -39,8 +40,9 @@ export const OnboardingController = {
       completed,
       editing,
       profile: {
-        firstName: user.firstName ?? "",
-        lastName: user.lastName ?? "",
+        fullName: user.identityVerifiedAt ? user.verifiedFullName : null,
+        identityConnected: Boolean(user.identityVerifiedAt),
+        identityAvailable: campusIdentityConfigured(),
         year: user.year ?? "",
         branch: user.branch ?? "",
         bio: user.bio ?? "",

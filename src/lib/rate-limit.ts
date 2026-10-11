@@ -1,24 +1,27 @@
 import "server-only";
+import { lt, sql } from "drizzle-orm";
+import { sha256 } from "@/lib/crypto";
+import { getDb } from "@/models/db/client";
+import { rateLimits } from "@/models/db/schema";
 
-/**
- * Small fixed-window rate limiter kept in memory. Good for a single server;
- * move to Redis/Upstash when running several instances.
- */
-type Window = { count: number; resetAt: number };
-const globalForLimits = globalThis as unknown as { __juntoLimits?: Map<string, Window> };
-const windows = (globalForLimits.__juntoLimits ??= new Map());
+/** Atomic fixed windows shared by all Vercel instances; DB failures fail closed. */
+export async function rateLimit(key: string, limit: number, windowMs: number) {
+  if (!Number.isInteger(limit) || limit < 1 || !Number.isFinite(windowMs) || windowMs < 1) throw new Error("Invalid rate limit");
+  const db = await getDb();
+  const now = new Date();
+  const resetAt = new Date(now.getTime() + windowMs);
+  const currentTime = sql`${now.toISOString()}::timestamptz`;
+  const nextReset = sql`${resetAt.toISOString()}::timestamptz`;
+  const [row] = await db.insert(rateLimits).values({ keyHash: sha256(key), count: 1, resetAt })
+    .onConflictDoUpdate({ target: rateLimits.keyHash, set: {
+      count: sql`case when ${rateLimits.resetAt} <= ${currentTime} then 1 else least(${rateLimits.count} + 1, ${limit + 1}) end`,
+      resetAt: sql`case when ${rateLimits.resetAt} <= ${currentTime} then ${nextReset} else ${rateLimits.resetAt} end`,
+    } }).returning();
+  const ok = row.count <= limit;
+  return { ok, retryAfterMs: ok ? 0 : Math.max(1, row.resetAt.getTime() - now.getTime()) };
+}
 
-export function rateLimit(key: string, limit: number, windowMs: number) {
-  const now = Date.now();
-  const current = windows.get(key);
-  if (!current || current.resetAt <= now) {
-    windows.set(key, { count: 1, resetAt: now + windowMs });
-    if (windows.size > 10_000) {
-      for (const [k, w] of windows) if (w.resetAt <= now) windows.delete(k);
-    }
-    return { ok: true as const, retryAfterMs: 0 };
-  }
-  if (current.count >= limit) return { ok: false as const, retryAfterMs: current.resetAt - now };
-  current.count += 1;
-  return { ok: true as const, retryAfterMs: 0 };
+export async function purgeRateLimits(now: Date) {
+  const db = await getDb();
+  await db.delete(rateLimits).where(lt(rateLimits.resetAt, now));
 }

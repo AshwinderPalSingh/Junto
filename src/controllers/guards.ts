@@ -21,7 +21,6 @@ export const currentUser = cache(async (): Promise<User | null> => {
   if (!session) return null;
   let user = await UserModel.findById(session.userId);
   if (!user || user.status === "deleted") return null;
-  user = await UserModel.syncIdentity(user);
   if (user.status === "active" && user.onboardedAt) {
     user.ratingRestrictedUntil = await ReputationModel.assessRestriction(user.id);
   }

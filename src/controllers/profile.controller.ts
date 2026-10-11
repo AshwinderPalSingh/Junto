@@ -1,4 +1,5 @@
 import "server-only";
+import { campusIdentityConfigured } from "@/lib/campus-oidc";
 import { notFound, redirect } from "next/navigation";
 import { BADGES } from "@/config/badges";
 import { BlockModel } from "@/models/block.model";
@@ -76,8 +77,9 @@ export const ProfileController = {
     const user = await requireMember();
     return {
       profile: {
-        firstName: user.firstName ?? "",
-        lastName: user.lastName ?? "",
+        fullName: user.identityVerifiedAt ? user.verifiedFullName : null,
+        identityConnected: Boolean(user.identityVerifiedAt),
+        identityAvailable: campusIdentityConfigured(),
         year: user.year ?? "",
         branch: user.branch ?? "",
         bio: user.bio ?? "",
