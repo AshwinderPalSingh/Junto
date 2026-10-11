@@ -6,8 +6,8 @@ Junto is **one Next.js app plus one PostgreSQL database**:
 
 | Part | What it is | Where it runs |
 |---|---|---|
-| Frontend **and** backend | The Next.js server. It renders the pages *and* runs the server code (sign-in, plans, chat, live updates, photo uploads). They are the same service and deploy together. | An app host: Render, Vercel, or your own server |
-| Database | PostgreSQL. It holds everything: accounts, plans, chats and profile photos. | Render Postgres, Neon, or the Docker Compose database |
+| Frontend **and** backend | The Next.js server. It renders the pages *and* runs the server code (sign-in, plans, chat, live updates, photo uploads). They are the same service and deploy together. | An app host: Vercel (the live site), Render, or your own server |
+| Database | PostgreSQL. It holds everything: accounts, passwords (hashed), plans, chats and profile photos. | Neon (the live site), Render Postgres, or the Docker Compose database |
 | Email | Sends the 6-digit sign-in codes. | Your Gmail account (SMTP), or Resend |
 
 There is no separate "backend server" to deploy.
@@ -39,25 +39,24 @@ There is no separate "backend server" to deploy.
 
 ---
 
-## Option 1 (recommended): Render, everything in one place
+## Option 1 (recommended, free): Vercel for the app + Neon for the database
 
-App and database in one dashboard, Gmail works, and live chat stays connected because the server runs
-all the time.
+This is what the live site runs on. It costs nothing for a student project, and Gmail works because
+Vercel allows ports 465 and 587. The trade-off is that Vercel runs code in short-lived functions: live
+chat reconnects every few minutes (you won't notice), and background jobs run only while people use the
+site.
 
-1. **Database.** On [render.com](https://render.com) click **New → Postgres**. Choose a region near your
-   users (Singapore for India) and a paid plan, since the free database is temporary. When it's ready,
-   copy the **Internal Database URL**.
-2. **App.** Click **New → Web Service** and connect your GitHub repository.
-   - **Runtime:** Docker (Render finds the `Dockerfile`).
-   - **Region:** the same as the database.
-   - **Instance type:** Starter or larger. Free instances block email and go to sleep after a few
-     minutes, which breaks sign-in and live chat.
-   - **Health check path:** `/api/health`
-3. **Environment variables** (the web service's Environment tab):
+1. **Database.** On [neon.tech](https://neon.tech) create a project in the Singapore region (or the one
+   nearest your users). Copy the **direct** connection string, *not* the "pooled" one, so live updates
+   work across servers. It ends with `?sslmode=require`.
+2. **App.** On [vercel.com](https://vercel.com) click **Add New → Project** and import the GitHub
+   repository. Vercel detects Next.js; keep the defaults. Do not set `BUILD_STANDALONE`.
+3. **Environment variables** (on the import screen, or later in Settings → Environment Variables):
 
    ```ini
-   DATABASE_URL=<Internal Database URL from step 1>
-   APP_URL=https://<your-service>.onrender.com
+   DATABASE_URL=<Neon direct connection string>
+   DATABASE_POOL_MAX=3
+   APP_URL=https://<your-project>.vercel.app
    ALLOWED_EMAIL_DOMAINS=thapar.edu
    ADMIN_EMAILS=<your thapar email>
    SMTP_HOST=smtp.gmail.com
@@ -71,34 +70,7 @@ all the time.
    CRON_SECRET=<from .env.local>
    ```
 
-4. **Deploy.** The first build takes a few minutes. Tables are created automatically when the app starts.
-5. **Your own domain (optional).** In **Settings → Custom Domains**, add e.g. `junto.yourdomain.com`,
-   create the DNS record Render shows you, then update `APP_URL`. HTTPS is set up automatically.
-
-Every `git push` to the main branch redeploys automatically.
-
----
-
-## Option 2 (free): Vercel for the app + Neon for the database
-
-Costs nothing for a student project, and Gmail works because Vercel allows ports 465 and 587. The
-trade-off is that Vercel runs code in short-lived functions: live chat reconnects every few minutes
-(you won't notice), and background jobs run only while people use the site.
-
-1. **Database.** On [neon.tech](https://neon.tech) create a project in the Singapore region (or the one
-   nearest your users). Copy the **direct** connection string, *not* the "pooled" one, so live updates
-   work across servers. It ends with `?sslmode=require`.
-2. **App.** On [vercel.com](https://vercel.com) click **Add New → Project** and import the GitHub
-   repository. Vercel detects Next.js; keep the defaults. Do not set `BUILD_STANDALONE`.
-3. **Environment variables.** Use the same list as Render above, plus:
-
-   ```ini
-   DATABASE_URL=<Neon direct connection string>
-   APP_URL=https://<your-project>.vercel.app
-   DATABASE_POOL_MAX=3
-   ```
-
-4. **Deploy.**
+4. **Deploy.** Tables are created automatically the first time the app connects to the database.
 5. **Keep the app next to the database.** `vercel.json` pins Vercel's functions to Singapore (`sin1`),
    the same region as the Neon database. If you create the database elsewhere, change both together:
    every page makes several database queries, and an ocean between them adds seconds.
@@ -109,6 +81,37 @@ trade-off is that Vercel runs code in short-lived functions: live chat reconnect
    [cron-job.org](https://cron-job.org) that calls `https://<your site>/api/cron/maintenance` every
    30 minutes with the header `Authorization: Bearer <CRON_SECRET>`. (More often keeps Neon's free
    database awake and uses up its hours.)
+8. **Your own domain (optional).** In the project's **Settings → Domains**, add e.g.
+   `junto.yourdomain.com`, create the DNS record Vercel shows you, then update `APP_URL` and redeploy.
+   HTTPS is set up automatically.
+
+Every `git push` to the main branch redeploys automatically.
+
+---
+
+## Option 2: Render, always on (paid)
+
+Move here when Junto outgrows the free plans. The server runs all the time, so live chat stays
+connected and background jobs run on schedule. The code needs no changes: copy the database across with
+`pg_dump` and `pg_restore`, and use the same settings.
+
+1. **Database.** On [render.com](https://render.com) click **New → Postgres**. Choose a region near your
+   users (Singapore for India) and a paid plan, since the free database is temporary. When it's ready,
+   copy the **Internal Database URL**.
+2. **App.** Click **New → Web Service** and connect your GitHub repository.
+   - **Runtime:** Docker (Render finds the `Dockerfile`).
+   - **Region:** the same as the database.
+   - **Instance type:** Starter or larger. Free instances block email and go to sleep after a few
+     minutes, which breaks sign-in and live chat.
+   - **Health check path:** `/api/health`
+3. **Environment variables** (the web service's Environment tab): the same list as Vercel above, with
+   `DATABASE_URL` set to the Internal Database URL from step 1 and `APP_URL` set to
+   `https://<your-service>.onrender.com`. Leave out `DATABASE_POOL_MAX`.
+4. **Deploy.** The first build takes a few minutes. Tables are created automatically when the app starts.
+5. **Your own domain (optional).** In **Settings → Custom Domains**, add e.g. `junto.yourdomain.com`,
+   create the DNS record Render shows you, then update `APP_URL`. HTTPS is set up automatically.
+
+Every `git push` to the main branch redeploys automatically.
 
 ---
 
@@ -145,7 +148,8 @@ Resend sends over HTTPS, which no host blocks, and its free tier covers a campus
 
 - [ ] `https://<your site>/api/health` shows `"status":"ok"`, `"database":"ok"` and `"email":"smtp"` (or
   `"resend"`). `"degraded"` means email isn't configured.
-- [ ] Sign in with your Thapar email: the code arrives within a few seconds (check spam the first time).
+- [ ] Create an account with your Thapar email and a password: the confirmation code arrives within a
+  few seconds (check spam the first time). Sign out, then sign back in with the password.
 - [ ] Finish setup on a phone and on a laptop as two accounts. Post a plan with one, join it with the
   other, accept, and chat: messages should appear instantly on both.
 - [ ] In Settings, turn on notifications. This needs HTTPS, so it only works on the live site.
@@ -170,4 +174,5 @@ With Docker, schedule `docker compose exec db pg_dump -U junto junto > backup.sq
 | Codes never arrive; logs show a connection timeout to smtp.gmail.com | The host blocks SMTP. Use a paid instance, or Resend. |
 | "Gmail rejected the login" | Use a 16-character App Password, with 2-Step Verification on. |
 | Live chat only updates after a refresh | `DATABASE_URL` is a *pooled* connection string. Use the direct one. |
+| Every page takes seconds to load | The app and the database are in different regions. Set `regions` in `vercel.json` to the database's region (`sin1` for Singapore). |
 | `Invalid environment configuration` at start-up | A variable has the wrong format (for example `APP_URL` must start with `https://`). |

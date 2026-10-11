@@ -178,9 +178,9 @@ hours and limits.
 ## Deploying
 
 Junto is one Next.js service (pages and server code together) plus a PostgreSQL database. **See
-[DEPLOY.md](DEPLOY.md)** for step-by-step guides: Render (recommended, everything in one place), Vercel +
-Neon (free), or your own server with Docker. It also explains why some hosts block Gmail's SMTP on free
-plans, and how to use Resend there.
+[DEPLOY.md](DEPLOY.md)** for step-by-step guides: Vercel + Neon (recommended and free; the live site runs
+there), Render (always on, paid), or your own server with Docker. It also explains why some hosts block
+Gmail's SMTP on free plans, and how to use Resend there.
 
 ### Operations
 
