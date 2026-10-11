@@ -25,16 +25,18 @@ export type MeetupRecord = {
   reportedMissingBy: readonly string[];
   /** For hosts: how many guests attended. */
   guestsAttended: number;
+  review?: "confirmed" | "dismissed";
 };
 
-export type CancellationRecord = { kind: "early" | "late" | "safety" | "plan_cancelled" | "removed" };
+export type CancellationRecord = { id?: string; kind: "early" | "late" | "safety" | "plan_cancelled" | "removed" };
 
 export type Attendance = "attended" | "no_show" | "reported" | "unknown";
 
 export function attendanceOf(m: MeetupRecord): Attendance {
+  if (m.review === "confirmed") return "no_show";
   if (m.confirmedBy.length > 0) return "attended";
   if (m.selfReport === "missed") return "no_show";
-  if (m.reportedMissingBy.length > 0 && !m.checkedIn) return "reported";
+  if (m.review !== "dismissed" && m.reportedMissingBy.length > 0 && !m.checkedIn) return "reported";
   if (m.checkedIn || m.selfReport === "attended") return "attended";
   return "unknown";
 }
@@ -52,17 +54,24 @@ export type Reputation = {
   level: "new" | "reliable" | "good" | "mixed";
   summary: string;
   badges: BadgeId[];
+  rating: number | null;
+  ratingSample: number;
+  acceptedPlans: number;
+  declinedRequests: number;
+  penaltyIds: string[];
 };
 
 export function computeReputation(
   meetups: readonly MeetupRecord[],
   cancellations: readonly CancellationRecord[],
+  requests?: { acceptedPlans: number; declinedRequests: number },
 ): Reputation {
   let attended = 0;
   let selfMissed = 0;
   const reported: MeetupRecord[] = [];
   const activities = new Set<string>();
   let hostedGroups = 0;
+  const penaltyIds: string[] = [];
 
   for (const m of meetups) {
     const a = attendanceOf(m);
@@ -72,6 +81,7 @@ export function computeReputation(
       if (m.role === "host" && m.capacity > 1 && m.guestsAttended >= 2) hostedGroups += 1;
     } else if (a === "no_show") {
       selfMissed += 1;
+      penaltyIds.push(`no_show:${m.planId}`);
     } else if (a === "reported") {
       reported.push(m);
     }
@@ -81,9 +91,17 @@ export function computeReputation(
   const reportsCount = distinctReporters.size >= RULES.noShowMinReporters;
   const noShows = selfMissed + (reportsCount ? reported.length : 0);
   const pendingReports = reportsCount ? 0 : reported.length;
+  if (reportsCount) penaltyIds.push(...reported.map((m) => `no_show:${m.planId}`));
 
   const lateCancels = cancellations.filter((c) => c.kind === "late").length;
   const earlyCancels = cancellations.filter((c) => c.kind === "early").length;
+  cancellations.forEach((c, i) => {
+    if (c.kind === "late") penaltyIds.push(`late:${c.id ?? i}`);
+  });
+  const ratingSample = attended + noShows + lateCancels;
+  const rating = ratingSample >= RULES.ratingMinCommitments
+    ? Math.round((5 * attended / (attended + noShows + lateCancels * 0.5)) * 10) / 10
+    : null;
 
   const sample = attended + noShows;
   const showUpRate = sample >= RULES.reliabilityMinMeetups ? attended / sample : null;
@@ -117,7 +135,28 @@ export function computeReputation(
     level,
     summary,
     badges,
+    rating,
+    ratingSample,
+    acceptedPlans: requests?.acceptedPlans ?? meetups.length + cancellations.length,
+    declinedRequests: requests?.declinedRequests ?? 0,
+    penaltyIds: [...new Set(penaltyIds)],
   };
 }
 
 export const emptyReputation = (): Reputation => computeReputation([], []);
+
+/** Reassess new incidents without perpetually renewing a pause for old ones. */
+export function ratingRestriction(
+  rep: Reputation,
+  previous: { until: Date | null; reviewed: readonly string[] },
+  now: Date,
+): { until: Date | null; reviewed: string[] } {
+  const reviewed = [...new Set([...previous.reviewed, ...rep.penaltyIds])];
+  if (rep.rating === null || rep.rating >= RULES.ratingRestrictionThreshold) return { until: null, reviewed: [...previous.reviewed] };
+  const newIncident = rep.penaltyIds.some((id) => !previous.reviewed.includes(id));
+  const active = previous.until && previous.until > now;
+  return {
+    until: active ? previous.until : newIncident ? new Date(now.getTime() + RULES.ratingRestrictionHours * 3_600_000) : null,
+    reviewed,
+  };
+}

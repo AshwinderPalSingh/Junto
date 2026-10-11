@@ -35,14 +35,14 @@ export function OnboardingView({ vm, actions }: Props) {
 
   return (
     <div className="mx-auto min-h-dvh max-w-2xl px-5 pt-6 pb-16">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <Logo />
         {vm.editing ? (
           <Button asChild variant="ghost" size="sm">
             <Link href="/profile">Done</Link>
           </Button>
         ) : (
-          <span className="font-mono text-xs text-muted-foreground">{vm.email}</span>
+          <span className="min-w-0 basis-full break-all font-mono text-xs text-muted-foreground sm:basis-auto">{vm.email}</span>
         )}
       </header>
 

@@ -17,6 +17,7 @@
     "setup": "node scripts/setup.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
+    "db:check": "node scripts/check-db.mjs",
     "db:studio": "drizzle-kit studio",
     "email:test": "node scripts/test-email.mjs",
     "icons": "node scripts/generate-icons.mjs"

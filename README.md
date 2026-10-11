@@ -67,7 +67,7 @@ on `/api/health`.
 | Area | Features |
 |---|---|
 | **Verified access** | Only allowed campus domains (`@thapar.edu`). Sign in with **email + password** or a **one-time email code**. Creating an account and resetting a password both confirm the inbox with a code, and the new password only applies in the browser that chose it. Passwords are hashed with scrypt; 5 wrong tries pause password sign-in for 15 minutes; a reset or change signs out other devices. Codes are hashed, expire in 10 minutes, allow 5 tries, have a 30-second resend cooldown and are rate-limited per address and network. Sessions are database-backed httpOnly cookies. |
-| **Profile** | Name, year, department, up to 5 interests, vibe, short bio and **exactly one mandatory profile photo**: chosen, dropped, pasted or taken with the camera, then cropped in the browser and re-encoded on the server with location data stripped. Stored in Postgres and served only to signed-in members. Gender is locked after setup. |
+| **Profile** | Display name derived from the verified Thapar email (not editable), year, department including Computer Science and Engineering and Faculty, up to 5 interests, vibe, short bio and **exactly one mandatory profile photo**: chosen, dropped, pasted or taken with the camera, then cropped in the browser and re-encoded on the server with location data stripped. Stored in Postgres and served only to signed-in members. Gender is locked after setup. |
 | **Private preferences** | Who you're comfortable meeting, and one-on-one versus groups. Never shown on any profile; used as hard filters in both directions. |
 | **Board** | Plans happening soon and later, filters by activity, one-tap posting, "N people free right now", your upcoming meetups. |
 | **Post a plan** | Activity, a public campus spot, now / +15 / +30 / +60 min / custom time, duration, 1–5 companions, who can join, a note and a live preview. |
@@ -77,14 +77,14 @@ on `/api/health`.
 | **Meetup space** | The group chat, an "I'm here" check-in that posts to it, and a read-only link to share with a trusted contact. |
 | **Changing plans** | Leave or cancel with a reason. More than an hour's notice is fine, later is noted, and safety cancellations never count. |
 | **Afterwards** | Private feedback on who showed up, whether you'd meet again, and private flags. Serious flags open a moderator report. |
-| **Reliability & badges** | "Showed up to 9 of 10 meetups" appears only after 5+ meetups. One-sided no-show claims count only once 2+ different people make them. |
+| **Reliability & badges** | A five-point attendance rating appears after 3 confirmed outcomes. Declines, early cancellations and safety cancellations are neutral; late cancellations carry half the weight of a no-show. Reports need corroboration or moderator confirmation. Below 2.5 / 5, meetup and messaging access pauses for 48 hours; upcoming commitments are released without another penalty. The same incidents cannot restart an expired pause. Existing show-up statistics and badges remain. |
 | **Safety** | Block (mutual invisibility), report (7 categories), public meeting points only, rate limits, no overlapping bookings, a safety centre. |
 | **Live** | Server-Sent Events for instant updates and chat messages, fanned out between server instances with Postgres `LISTEN/NOTIFY`, and Web Push when the app is closed (installable PWA). |
 | **Moderation** | Metrics (fulfilment, completion, repeat use, time to first request, new connections, reports per 100 meetups), reports queue, suspend/reinstate, photo review. |
 
-Design: light mode uses frosted, translucent glass panels; dark mode uses calm, solid surfaces. Both have
-rounded controls and glass-in and scroll-reveal animations. Motion is reduced automatically for people who
-ask for it.
+Design: Thapar campus photography, pink/coral/lilac light-mode glass and darker translucent surfaces at night.
+Both have fluid navigation, glass-in and scroll-reveal animations. Motion is reduced automatically for people who
+ask for it. Run `npm run db:check` for a credential-safe connection, temporary read/write and migration check.
 
 ---
 

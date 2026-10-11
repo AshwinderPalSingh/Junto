@@ -17,12 +17,14 @@ export const YEARS = [
   { id: "pg", label: "Masters" },
   { id: "phd", label: "PhD" },
   { id: "staff", label: "Staff / faculty" },
+  { id: "faculty", label: "Faculty" },
 ] as const;
 export type YearId = (typeof YEARS)[number]["id"];
 export const YEAR_IDS = YEARS.map((y) => y.id) as [YearId, ...YearId[]];
 
 export const BRANCHES = [
   "Computer Engineering",
+  "Computer Science and Engineering",
   "Computer Science & Business",
   "Electronics & Communication",
   "Electronics & Computer",
@@ -36,6 +38,7 @@ export const BRANCHES = [
   "Physics / Sciences",
   "Management",
   "Humanities",
+  "Faculty",
   "Other",
 ] as const;
 

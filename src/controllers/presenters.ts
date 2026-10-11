@@ -1,5 +1,6 @@
 import "server-only";
 import { getBadge } from "@/config/badges";
+import { campusIdentity } from "@/lib/campus-identity";
 import { getActivity, getSpot } from "@/config/campus";
 import { interestOf, VIBES, yearLabel } from "@/config/profile";
 import { acceptedGuests, memberOf, pendingRequests, type PlanBundle } from "@/models/plan.model";
@@ -30,8 +31,10 @@ export type PresentContext = {
   reputations: Map<string, Reputation>;
 };
 
-export const initialsOf = (u: Pick<User, "firstName" | "lastName">) =>
-  `${u.firstName?.charAt(0) ?? "?"}${u.lastName?.charAt(0) ?? ""}`.toUpperCase();
+export const initialsOf = (u: User) => {
+  const identity = u.status === "deleted" ? u : campusIdentity(u.email);
+  return `${identity.firstName?.charAt(0) ?? "?"}${identity.lastName?.charAt(0) ?? ""}`.toUpperCase();
+};
 
 export const avatarUrl = (u: User) =>
   hasPhoto(u) ? `/api/avatars/${u.id}?v=${u.photoUpdatedAt?.getTime() ?? 0}` : null;
@@ -46,6 +49,8 @@ export function presentReputation(rep: Reputation): ReputationVM {
     level: rep.level,
     summary: rep.summary,
     attended: rep.attended,
+    rating: rep.rating,
+    ratingSample: rep.ratingSample,
     badges: rep.badges.map((id) => {
       const b = getBadge(id);
       return { id: b.id, label: b.label, icon: b.icon, description: b.description };
@@ -70,7 +75,7 @@ export function presentMember(user: User, ctx: PresentContext): MemberVM {
   return {
     id: user.id,
     name: displayName(user),
-    firstName: user.firstName ?? "Member",
+    firstName: user.status === "deleted" ? "Deleted" : campusIdentity(user.email).firstName,
     year: yearLabel(user.year),
     branch: user.branch,
     bio: user.bio,

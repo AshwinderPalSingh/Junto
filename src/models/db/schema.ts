@@ -104,6 +104,9 @@ export const users = pgTable(
     /** Consecutive wrong passwords; reaching the limit locks password sign-in for a while. */
     failedLogins: smallint("failed_logins").notNull().default(0),
     lockedUntil: ts("locked_until"),
+    ratingRestrictedUntil: ts("rating_restricted_until"),
+    /** Incident IDs already assessed: an expired pause must not renew for the same history. */
+    ratingReviewedPenalties: text("rating_reviewed_penalties").array().notNull().default(emptyTextArray),
     /** Set while a photo is stored; also its cache-busting version. */
     photoUpdatedAt: ts("photo_updated_at"),
     photoRejectedAt: ts("photo_rejected_at"),

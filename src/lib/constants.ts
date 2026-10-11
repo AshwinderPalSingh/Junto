@@ -14,4 +14,5 @@ export const PROTECTED_PREFIXES = [
   "/settings",
   "/admin",
   "/onboarding",
+  "/restricted",
 ] as const;

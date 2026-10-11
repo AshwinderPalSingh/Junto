@@ -34,6 +34,9 @@ export const RULES = {
   reliabilityMinMeetups: 5,
   /** One-sided no-show reports count only after this many different reporters. */
   noShowMinReporters: 2,
+  ratingMinCommitments: 3,
+  ratingRestrictionThreshold: 2.5,
+  ratingRestrictionHours: 48,
   /** Check-in opens this many minutes before the start. */
   checkInOpensMinutes: 15,
   /** Feedback can be left for this long after a plan ends. */

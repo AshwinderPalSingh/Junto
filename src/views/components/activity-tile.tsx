@@ -24,6 +24,7 @@ export function ActivityTile({
     <span
       role="img"
       aria-label={activity.label}
+      data-activity-icon={activity.icon}
       style={style}
       className={cn("glass inline-grid shrink-0 place-items-center text-foreground", SIZES[size], className)}
     >

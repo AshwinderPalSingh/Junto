@@ -1,4 +1,4 @@
-import { ShieldCheck, Sprout } from "lucide-react";
+import { ShieldCheck, Sprout, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReputationVM } from "@/views/view-models";
 
@@ -50,8 +50,10 @@ export function ReputationLine({ reputation, className }: { reputation: Reputati
   const Icon = reputation.level === "new" ? Sprout : ShieldCheck;
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
-      <Icon className="size-3.5 shrink-0" strokeWidth={1.75} />
-      <span className="truncate">{reputation.summary}</span>
+      {reputation.rating !== null ? <Star className="size-3.5 shrink-0 fill-warning/20 text-warning" /> : <Icon className="size-3.5 shrink-0" strokeWidth={1.75} />}
+      <span className="min-w-0 truncate" title={reputation.summary}>
+        {reputation.rating !== null ? `${reputation.rating.toFixed(1)} / 5 · ${reputation.ratingSample} commitments` : reputation.summary}
+      </span>
     </span>
   );
 }

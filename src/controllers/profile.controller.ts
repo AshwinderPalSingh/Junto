@@ -33,6 +33,8 @@ export const ProfileController = {
         lateCancels: rep.lateCancels,
         noShows: rep.noShows,
         pendingReports: rep.pendingReports,
+        acceptedPlans: rep.acceptedPlans,
+        declinedRequests: rep.declinedRequests,
       },
     };
   },

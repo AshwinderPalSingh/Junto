@@ -363,7 +363,7 @@ export function FeedbackForm({ vm, action }: { vm: PlanDetailVM; action: Action 
       <div>
         <PanelTitle>How did it go?</PanelTitle>
         <p className="mt-1 text-sm text-muted-foreground">
-          Private and quick. It builds fair reliability records and is never shown to the other person.
+          Private feedback. No-show reports affect ratings after corroboration or moderator review.
         </p>
       </div>
       <form action={formAction} className="space-y-5">
@@ -395,11 +395,11 @@ export function FeedbackForm({ vm, action }: { vm: PlanDetailVM; action: Action 
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 text-sm">
                   <span className="mr-1 text-muted-foreground">Showed up?</span>
-                  <ChoiceChip type="radio" name={`showed_${t.id}`} value="yes" defaultChecked>
+                  <ChoiceChip type="radio" name={`showed_${t.id}`} value="yes" required>
                     Yes
                   </ChoiceChip>
                   <ChoiceChip type="radio" name={`showed_${t.id}`} value="no">
-                    No
+                    Report no-show
                   </ChoiceChip>
                   <ChoiceChip name={`again_${t.id}`}>Would meet again</ChoiceChip>
                 </div>

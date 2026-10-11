@@ -71,8 +71,6 @@ export async function makeMember(
   await UserModel.saveProfile(
     user.id,
     {
-      firstName: overrides.firstName ?? `Member${counter}`,
-      lastName: "Test",
       year: "y2",
       branch: "Computer Engineering",
       bio: null,

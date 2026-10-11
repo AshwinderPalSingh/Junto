@@ -30,7 +30,7 @@ export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{1
 
 const chatPerson = (u: User): ChatPerson => ({
   id: u.id,
-  status: u.status,
+  status: u.ratingRestrictedUntil && u.ratingRestrictedUntil > new Date() ? "suspended" : u.status,
   onboarded: isOnboarded(u),
   gender: u.gender,
   companionGenders: u.companionGenders,
@@ -88,7 +88,7 @@ export async function chatAccess(viewer: User, conversationId: string, opts: { s
       BlockModel.hasBlocked(peer.id, viewer.id),
     ]);
     if (blockedMe) return null;
-    const send = canSendDirect(viewer, { status: peer.status, firstName: peer.firstName ?? "this member" }, {
+    const send = canSendDirect(chatPerson(viewer), { status: chatPerson(peer).status, firstName: peer.firstName ?? "this member" }, {
       blockedByMe,
       blockedMe,
     });
@@ -140,7 +140,7 @@ export async function deliverChatMessage(access: ChatAccess, message: ChatMessag
   const planLabel = access.plan ? getActivity(access.plan.activity).label : null;
   await Promise.all(
     access.others
-      .filter((u) => u.status === "active")
+      .filter((u) => u.status === "active" && (!u.ratingRestrictedUntil || u.ratingRestrictedUntil <= new Date()))
       .map(async (recipient) => {
         try {
           await publish(recipient.id, {

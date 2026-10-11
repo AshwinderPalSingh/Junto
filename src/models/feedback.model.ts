@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, inArray } from "drizzle-orm";
 import { DomainError } from "@/lib/errors";
 import { getDb } from "./db/client";
-import { feedback, participations, plans } from "./db/schema";
+import { feedback, participations, plans, reports } from "./db/schema";
 import { feedbackOpen } from "./rules/plan-timing";
 
 export type FeedbackEntry = {
@@ -17,8 +17,9 @@ export const FeedbackModel = {
   async submit(planId: string, raterId: string, attended: boolean, entries: FeedbackEntry[], now: Date) {
     const db = await getDb();
     return db.transaction(async (tx) => {
-      const [plan] = await tx.select().from(plans).where(eq(plans.id, planId)).limit(1);
+      const [plan] = await tx.select().from(plans).where(eq(plans.id, planId)).limit(1).for("update");
       if (!plan) throw new DomainError("Plan not found.");
+      if (plan.status === "cancelled" || plan.status === "expired") throw new DomainError("Feedback isn't open for this plan.");
       const members = await tx
         .select()
         .from(participations)
@@ -27,6 +28,9 @@ export const FeedbackModel = {
       if (!mine) throw new DomainError("You weren't booked on this plan.");
       if (mine.feedbackAt) throw new DomainError("You've already shared feedback for this one.");
       if (!feedbackOpen(plan.startsAt, plan.endsAt, now)) throw new DomainError("Feedback isn't open for this plan.");
+      if (plan.status !== "completed" && members.some((m) => m.role === "guest")) {
+        await tx.update(plans).set({ status: "completed", completedAt: now, updatedAt: now }).where(eq(plans.id, planId));
+      }
 
       await tx
         .update(participations)
@@ -47,6 +51,12 @@ export const FeedbackModel = {
           createdAt: now,
         }));
       if (rows.length) await tx.insert(feedback).values(rows).onConflictDoNothing();
+      const noShows = rows.filter((r) => !r.showedUp);
+      if (noShows.length) await tx.insert(reports).values(noShows.map((r) => ({
+        reporterId: raterId, reportedId: r.rateeId, planId, category: "no_show",
+        details: "Did not show up after accepting and did not cancel. Submitted by a participant in post-meetup feedback.",
+        createdAt: now,
+      })));
       return { flagged: rows.filter((r) => r.flags.length > 0).map((r) => r.rateeId) };
     });
   },

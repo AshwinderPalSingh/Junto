@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "rating_restricted_until" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN "rating_reviewed_penalties" text[] DEFAULT '{}'::text[] NOT NULL;

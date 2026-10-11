@@ -98,7 +98,7 @@ export function notificationCopy(
         icon: "shield",
         title: typeof d.title === "string" ? d.title : "Account notice",
         body: typeof d.body === "string" ? d.body : "",
-        href: "/settings",
+        href: typeof d.href === "string" && /^\/plans\/[0-9a-f-]{36}$/.test(d.href) ? d.href : "/settings",
       };
   }
 }

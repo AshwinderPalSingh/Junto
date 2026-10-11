@@ -19,6 +19,7 @@ import { ChatModel } from "@/models/chat.model";
 import { NotificationModel } from "@/models/notification.model";
 import { acceptedMembers, memberOf, PlanModel, type PlanBundle } from "@/models/plan.model";
 import { ReportModel } from "@/models/report.model";
+import { ReputationModel } from "@/models/reputation.model";
 import { ShareLinkModel } from "@/models/share-link.model";
 import { displayName, type User } from "@/models/user.model";
 import { chatAccess, deliverChatMessage } from "./chat.controller";
@@ -299,6 +300,9 @@ export async function submitFeedback(planId: string, _prev: ActionState, formDat
   const bundle = await PlanModel.bundle(planId);
   if (!bundle) return failure("Plan not found.");
   const validFlags = new Set<string>(FEEDBACK_FLAG_IDS);
+  if (attended && acceptedMembers(bundle).some((m) => m.user.id !== user.id && !["yes", "no"].includes(String(formData.get(`showed_${m.user.id}`))))) {
+    return failure("Confirm whether each person showed up before sending feedback.");
+  }
   const entries = acceptedMembers(bundle)
     .filter((m) => m.user.id !== user.id)
     .map((m) => ({
@@ -330,6 +334,7 @@ export async function submitFeedback(planId: string, _prev: ActionState, formDat
       }
     }
   }
+  await Promise.all([user.id, ...entries.map((e) => e.rateeId)].map((id) => ReputationModel.assessRestriction(id)));
   refresh();
   return success("Thanks! That keeps Junto reliable for everyone.");
 }

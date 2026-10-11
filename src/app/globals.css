@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ═══════════════════════════ Junto design system ═══════════════════════════
-   Neutral surfaces, rounded controls, and softly frosted glass. */
+   Pink, coral, lilac and mint with translucent, optically crisp surfaces. */
 
 @theme inline {
   --color-background: var(--background);
@@ -41,9 +41,9 @@
 
   --radius-xs: 4px;
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
   --radius-2xl: 20px;
   --radius-3xl: 28px;
   --radius-4xl: 36px;
@@ -56,28 +56,28 @@
 }
 
 :root {
-  --radius: 8px;
-  --background: #f1f3f2;
-  --foreground: #202321;
-  --card: rgb(255 255 255 / 0.84);
-  --card-foreground: #0a0a0a;
-  --popover: rgb(255 255 255 / 0.82);
-  --popover-foreground: #0a0a0a;
-  --primary: #202321;
-  --primary-foreground: #fafafa;
-  --secondary: rgb(0 0 0 / 0.045);
-  --secondary-foreground: #0a0a0a;
-  --muted: rgb(0 0 0 / 0.045);
-  --muted-foreground: #656b68;
-  --accent: rgb(0 0 0 / 0.06);
-  --accent-foreground: #0a0a0a;
+  --radius: 18px;
+  --background: #f4e6ef;
+  --foreground: #322335;
+  --card: rgb(255 255 255 / 0.62);
+  --card-foreground: #322335;
+  --popover: rgb(255 250 253 / 0.96);
+  --popover-foreground: #322335;
+  --primary: #873764;
+  --primary-foreground: #ffffff;
+  --secondary: rgb(255 255 255 / 0.36);
+  --secondary-foreground: #322335;
+  --muted: rgb(86 41 71 / 0.06);
+  --muted-foreground: #6b5368;
+  --accent: rgb(255 255 255 / 0.55);
+  --accent-foreground: #322335;
   --destructive: #c4161c;
-  --border: rgb(0 0 0 / 0.1);
-  --input: rgb(0 0 0 / 0.16);
-  --ring: rgb(0 0 0 / 0.55);
-  --success: #28634e;
+  --border: rgb(80 39 67 / 0.13);
+  --input: rgb(80 39 67 / 0.2);
+  --ring: #a9437c;
+  --success: #236458;
   --success-foreground: #ffffff;
-  --warning: #956a1b;
+  --warning: #895019;
   --chart-1: #0a0a0a;
   --chart-2: #6e6e73;
   --chart-3: #a1a1a6;
@@ -85,15 +85,16 @@
   --chart-5: #3a3a3c;
 
   /* Glass material */
-  --glass-fill: rgb(255 255 255 / 0.74);
-  --glass-fill-strong: rgb(255 255 255 / 0.94);
-  --glass-gloss: rgb(255 255 255 / 0.65);
-  --glass-edge: rgb(0 0 0 / 0.08);
+  --glass-fill: rgb(255 255 255 / 0.46);
+  --glass-fill-strong: rgb(255 248 253 / 0.86);
+  --glass-gloss: rgb(255 255 255 / 0.45);
+  --glass-edge: rgb(255 255 255 / 0.72);
   --glass-highlight: rgb(255 255 255 / 0.95);
   --glass-inner: rgb(255 255 255 / 0.35);
-  --glass-shadow: rgb(0 0 0 / 0.1);
-  --glass-shadow-near: rgb(0 0 0 / 0.04);
-  --glass-sheen: rgb(255 255 255 / 0.9);
+  --glass-shadow: rgb(90 31 77 / 0.2);
+  --glass-shadow-near: rgb(77 31 65 / 0.05);
+  --glass-sheen: rgb(255 255 255 / 0.6);
+  --canvas: linear-gradient(125deg, #f2c5e5 0%, #ded4f4 42%, #f7cdcc 78%, #d9eae5 100%);
 
   /* Ambient backdrop */
   --ambient-a: rgb(0 0 0 / 0.11);
@@ -103,24 +104,24 @@
 }
 
 .dark {
-  --background: #151817;
+  --background: #19171e;
   --foreground: #f5f5f7;
-  --card: #1c201f;
+  --card: rgb(36 30 42 / 0.78);
   --card-foreground: #f5f5f7;
-  --popover: #222726;
+  --popover: rgb(38 31 42 / 0.96);
   --popover-foreground: #f5f5f7;
-  --primary: #f5f5f7;
-  --primary-foreground: #000000;
+  --primary: #edb4d4;
+  --primary-foreground: #352031;
   --secondary: rgb(255 255 255 / 0.06);
   --secondary-foreground: #f5f5f7;
   --muted: rgb(255 255 255 / 0.06);
-  --muted-foreground: #a4aaa7;
+  --muted-foreground: #c3afc2;
   --accent: rgb(255 255 255 / 0.09);
   --accent-foreground: #f5f5f7;
   --destructive: #ff453a;
   --border: rgb(255 255 255 / 0.12);
   --input: rgb(255 255 255 / 0.18);
-  --ring: rgb(255 255 255 / 0.55);
+  --ring: #edb4d4;
   --success: #a1d5bb;
   --success-foreground: #151817;
   --warning: #e7c379;
@@ -130,16 +131,16 @@
   --chart-4: #3a3a3c;
   --chart-5: #c7c7cc;
 
-  /* Dark mode has no glass: the "glass" surfaces are solid, flat panels. */
-  --glass-fill: #1c201f;
-  --glass-fill-strong: #222726;
-  --glass-gloss: transparent;
-  --glass-edge: rgb(255 255 255 / 0.09);
-  --glass-highlight: transparent;
-  --glass-inner: transparent;
+  --glass-fill: rgb(34 28 40 / 0.72);
+  --glass-fill-strong: rgb(37 29 43 / 0.91);
+  --glass-gloss: rgb(255 220 242 / 0.07);
+  --glass-edge: rgb(255 223 243 / 0.16);
+  --glass-highlight: rgb(255 228 245 / 0.2);
+  --glass-inner: rgb(255 255 255 / 0.025);
   --glass-shadow: rgb(0 0 0 / 0.5);
   --glass-shadow-near: rgb(0 0 0 / 0.3);
-  --glass-sheen: transparent;
+  --glass-sheen: rgb(255 220 241 / 0.12);
+  --canvas: linear-gradient(125deg, #281f30 0%, #19171e 42%, #32212b 78%, #1c2c29 100%);
 
   --ambient-a: rgb(255 255 255 / 0.13);
   --ambient-b: rgb(255 255 255 / 0.08);
@@ -163,6 +164,9 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "ss03";
+    min-height: 100dvh;
+    background-image: var(--canvas);
+    background-attachment: fixed;
   }
   h1,
   h2,
@@ -189,7 +193,7 @@
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: 1px solid var(--glass-edge);
-  border-radius: 8px;
+  border-radius: 20px;
   box-shadow:
     inset 0 1px 0 0 var(--glass-highlight),
     inset 0 0 0 1px var(--glass-inner),
@@ -206,7 +210,7 @@
   -webkit-backdrop-filter: blur(30px) saturate(190%);
   backdrop-filter: blur(30px) saturate(190%);
   border: 1px solid var(--glass-edge);
-  border-radius: 12px;
+  border-radius: 22px;
   box-shadow:
     inset 0 1px 0 0 var(--glass-highlight),
     0 30px 70px -30px var(--glass-shadow);
@@ -273,6 +277,7 @@
   overflow: hidden;
   pointer-events: none;
   background-color: var(--background);
+  background-image: var(--canvas);
 }
 .ambient::before {
   content: "";
@@ -408,6 +413,25 @@ body * {
   border-radius: 24px;
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 40px -30px var(--glass-shadow);
 }
+.app-shell main > div { animation: glass-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+[data-activity-icon="coffee"], [data-activity-icon="utensils"] { background-color: rgb(245 198 211 / 0.6); }
+[data-activity-icon="footprints"], [data-activity-icon="shopping-bag"] { background-color: rgb(198 226 218 / 0.6); }
+[data-activity-icon="target"], [data-activity-icon="book-open"] { background-color: rgb(217 204 240 / 0.6); }
+[data-activity-icon="dumbbell"] { background-color: rgb(244 205 191 / 0.6); }
+.dark [data-activity-icon="coffee"], .dark [data-activity-icon="utensils"] { background-color: rgb(78 44 61 / 0.65); }
+.dark [data-activity-icon="footprints"], .dark [data-activity-icon="shopping-bag"] { background-color: rgb(31 67 58 / 0.65); }
+.dark [data-activity-icon="target"], .dark [data-activity-icon="book-open"] { background-color: rgb(58 45 78 / 0.65); }
+.dark [data-activity-icon="dumbbell"] { background-color: rgb(81 52 45 / 0.65); }
+.app-sidebar nav a { min-width: 0; }
+.app-sidebar nav a[aria-current="page"] { box-shadow: 0 8px 20px -14px var(--primary); }
+.board-header { min-height: 164px; margin-inline: -16px; }
+[data-slot="button"] { max-width: 100%; }
+[data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"] {
+  box-shadow: inset 0 1px 1px rgb(90 31 77 / 0.04);
+  border-radius: 12px;
+}
+.dark .auth-backdrop::before { background: linear-gradient(125deg, #302139b8, #402439b3, #172828a1), url("/images/thapar-main.webp") center / cover; }
+@media (min-width: 640px) { .board-header { margin-inline: -24px; padding-inline: 28px; } }
 .app-topbar {
   border-radius: 0;
 }
@@ -427,8 +451,7 @@ body * {
   position: fixed;
   inset: -12px;
   z-index: -1;
-  background: linear-gradient(#21343b6b, #152a35a3), url("/images/campus-walk.jpg") center / cover;
-  filter: blur(7px);
+  background: linear-gradient(125deg, #cf6fa378, #b595d284, #d889906b), url("/images/thapar-main.webp") center / cover;
 }
 .auth-layout {
   display: grid;
@@ -437,7 +460,7 @@ body * {
   width: min(1120px, 100%);
   min-height: min(760px, calc(100dvh - 64px));
   padding: 14px;
-  background: var(--glass-fill-strong);
+  background: var(--glass-fill);
   backdrop-filter: blur(28px);
   border: 1px solid var(--glass-highlight);
   border-radius: 32px;
@@ -447,7 +470,7 @@ body * {
   border-radius: 22px;
 }
 .auth-form {
-  background: var(--card);
+  background: var(--glass-fill-strong);
 }
 .auth-form [data-slot="input"] {
   height: 54px;
@@ -482,15 +505,7 @@ body * {
   .auth-form [data-slot="input-otp-slot"] { width: 32px; height: 46px; }
 }
 
-/* ═══════════════════════════ Dark mode: solid, no glass ═══════════════════════════
-   Light mode keeps its frosted glass. In dark mode nothing is see-through or blurred
-   behind: panels are solid, overlays simply dim the page. */
-.dark *,
-.dark *::before,
-.dark *::after {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
+/* Dark glass retains depth while overlays and form surfaces stay readable. */
 .dark [data-slot$="-overlay"] {
   background-color: rgb(0 0 0 / 0.62);
 }
@@ -500,12 +515,12 @@ body * {
 .dark .landing-navBrand,
 .dark .landing-navLink,
 .dark .landing-theme {
-  background: #1c201f;
+  background: rgb(38 27 42 / 0.58);
   border-color: rgb(255 255 255 / 0.1);
 }
 .dark .landing-navBrand:hover,
 .dark .landing-navLink:hover {
-  background: #262b2a;
+  background: rgb(65 40 60 / 0.76);
 }
 .dark .landing-heroFrame {
   background: transparent;

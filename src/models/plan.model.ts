@@ -130,6 +130,8 @@ export const PlanModel = {
   joinCheck(bundle: PlanBundle, viewer: UserRow, ctx: JoinContext): JoinCheck {
     const { plan, host } = bundle;
     const guests = acceptedGuests(bundle);
+    if (host.status !== "active" || (host.ratingRestrictedUntil && host.ratingRestrictedUntil > ctx.now) ||
+      (viewer.ratingRestrictedUntil && viewer.ratingRestrictedUntil > ctx.now)) return { ok: false, reason: "closed" };
     if (plan.hostId === viewer.id) return { ok: false, reason: "own_plan" };
     if (ctx.blocked.has(host.id) || guests.some((g) => ctx.blocked.has(g.user.id))) {
       return { ok: false, reason: "blocked" };
@@ -345,6 +347,9 @@ export const PlanModel = {
       }
 
       if (!isActivePlan(bundle.plan)) throw new DomainError("This plan is no longer active.");
+      if (request.user.status !== "active" || (request.user.ratingRestrictedUntil && request.user.ratingRestrictedUntil > now)) {
+        throw new DomainError("This member isn't available for a plan right now.");
+      }
       if (!joinWindowOpen(bundle.plan.startsAt, now)) throw new DomainError("This plan has already started.");
       const guests = acceptedGuests(bundle);
       if (guests.length >= bundle.plan.capacity) {

@@ -17,6 +17,9 @@ export const EventsController = {
   async stream(request: Request): Promise<Response> {
     const user = await currentUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
+    if (user.status !== "active" || (user.ratingRestrictedUntil && user.ratingRestrictedUntil > new Date())) {
+      return new Response("Account paused", { status: 403 });
+    }
 
     const encoder = new TextEncoder();
     let cleanup = () => {};

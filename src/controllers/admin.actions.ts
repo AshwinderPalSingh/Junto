@@ -8,6 +8,7 @@ import { planNotificationData } from "@/models/maintenance";
 import { NotificationModel } from "@/models/notification.model";
 import { PlanModel } from "@/models/plan.model";
 import { ReportModel } from "@/models/report.model";
+import { ReputationModel } from "@/models/reputation.model";
 import { UserModel } from "@/models/user.model";
 import { requireAdmin } from "./guards";
 
@@ -32,6 +33,7 @@ export async function closeReport(_prev: ActionState, formData: FormData): Promi
   const report = await ReportModel.findById(parsed.data.reportId);
   if (!report) return failure("Report not found.");
   await ReportModel.close(report.id, admin.id, parsed.data.outcome, parsed.data.note);
+  if (report.category === "no_show") await ReputationModel.assessRestriction(report.reportedId);
   if (parsed.data.suspend) {
     await UserModel.setStatus(report.reportedId, "suspended", parsed.data.note ?? "Community guidelines violation");
   }

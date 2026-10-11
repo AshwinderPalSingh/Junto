@@ -14,6 +14,8 @@ export type ReputationVM = {
   summary: string;
   attended: number;
   badges: BadgeVM[];
+  rating: number | null;
+  ratingSample: number;
 };
 
 export type InterestVM = { id: string; label: string; shared: boolean };
@@ -170,6 +172,8 @@ export type ProfileVM = {
     lateCancels: number;
     noShows: number;
     pendingReports: number;
+    acceptedPlans: number;
+    declinedRequests: number;
   } | null;
   /** Starting a direct chat with this member (null on your own profile). */
   chat: { canStart: boolean; note: string | null } | null;

@@ -13,8 +13,6 @@ import { requireAccount } from "./guards";
 import { completedSteps } from "./onboarding.controller";
 
 const aboutSchema = z.object({
-  firstName: z.string().trim().min(1, "Tell us your first name.").max(40, "That's a long name — 40 characters max."),
-  lastName: z.string().trim().max(40).optional().default(""),
   gender: z.enum(GENDER_IDS, "Choose how you identify.").optional(),
   year: z.enum(YEAR_IDS, "Choose your year."),
   branch: z.enum(BRANCHES, "Choose your department."),
@@ -34,7 +32,7 @@ const aboutSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
 });
 
-/** POST: step 1 (and profile edits) — name, gender, year, interests. */
+/** POST: step 1 and profile edits; identity always comes from the verified mailbox. */
 export async function saveAbout(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireAccount();
   const parsed = aboutSchema.safeParse(formToObject(formData, ["interests"]));

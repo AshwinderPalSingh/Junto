@@ -15,7 +15,6 @@ import { PhotoCropDialog } from "@/views/components/photo-cropper";
 import { Button } from "@/views/ui/button";
 import { Checkbox } from "@/views/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@/views/ui/field";
-import { Input } from "@/views/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/views/ui/select";
 import { Spinner } from "@/views/ui/spinner";
 import { Textarea } from "@/views/ui/textarea";
@@ -44,17 +43,13 @@ export function AboutForm({
   return (
     <form action={formAction} className="space-y-8">
       {returnTo && <input type="hidden" name="return" value={returnTo} />}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field data-invalid={Boolean(fieldError(state, "firstName"))}>
-          <FieldLabel htmlFor="firstName">First name</FieldLabel>
-          <Input id="firstName" name="firstName" defaultValue={profile.firstName} autoComplete="given-name" required className="h-11" />
-          <FieldError>{fieldError(state, "firstName")}</FieldError>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="lastName">Last name</FieldLabel>
-          <Input id="lastName" name="lastName" defaultValue={profile.lastName} autoComplete="family-name" className="h-11" />
-          <FieldDescription>Others only see the initial.</FieldDescription>
-        </Field>
+      <div className="flex items-start gap-3 border-b border-border pb-5">
+        <ShieldCheck className="mt-1 size-5 shrink-0 text-success" />
+        <div>
+          <p className="text-xs text-muted-foreground">Campus identity</p>
+          <p className="mt-1 font-semibold">{[profile.firstName, profile.lastName].filter(Boolean).join(" ")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">From your verified Thapar email. Names cannot be edited.</p>
+        </div>
       </div>
 
       <FieldSet>
@@ -99,7 +94,7 @@ export function AboutForm({
         <Field data-invalid={Boolean(fieldError(state, "branch"))}>
           <FieldLabel>Department</FieldLabel>
           <Select name="branch" defaultValue={profile.branch || undefined}>
-            <SelectTrigger className="h-11 w-full bg-[var(--glass-fill)]">
+            <SelectTrigger className="h-14 w-full min-w-0 bg-[var(--glass-fill)] [&>[data-slot=select-value]]:line-clamp-2 [&>[data-slot=select-value]]:min-w-0 [&>[data-slot=select-value]]:whitespace-normal">
               <SelectValue placeholder="Choose your department" />
             </SelectTrigger>
             <SelectContent>

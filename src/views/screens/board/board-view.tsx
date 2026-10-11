@@ -3,6 +3,7 @@
 import { ArrowRight, ArrowUpRight, BellRing, LayoutGrid, MessageSquareText, Plus, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { ACTIVITIES } from "@/config/campus";
 import { formatClock } from "@/lib/time";
@@ -71,8 +72,10 @@ export function BoardView({ vm }: { vm: BoardVM }) {
         </motion.div>
       )}
 
-      <header className="animate-glass-in">
-        <p className="label-caps text-muted-foreground">
+      <header className="board-header relative isolate overflow-hidden px-6 py-8 text-white animate-glass-in">
+        <Image src="/images/thapar-main.webp" alt="Thapar campus" fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 768px" className="-z-20 object-cover object-[center_55%]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[#211324]/50" />
+        <p className="label-caps text-white/85">
           {vm.greeting}, {vm.firstName}
         </p>
         <h1 className="mt-2 text-[2.25rem] leading-[1.02] tracking-[-0.04em] sm:text-[2.75rem]">What are you up to?</h1>

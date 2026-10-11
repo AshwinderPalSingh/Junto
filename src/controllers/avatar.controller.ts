@@ -13,6 +13,7 @@ export const AvatarController = {
   async show(userId: string): Promise<Response> {
     const viewer = await currentUser();
     if (!viewer || viewer.status !== "active") return new Response("Unauthorized", { status: 401 });
+    if (viewer.ratingRestrictedUntil && viewer.ratingRestrictedUntil > new Date()) return new Response("Account paused", { status: 403 });
     if (!UUID.test(userId)) return new Response("Not found", { status: 404 });
     const target = await UserModel.findById(userId);
     if (!target || !hasPhoto(target) || target.status === "deleted") return new Response("Not found", { status: 404 });

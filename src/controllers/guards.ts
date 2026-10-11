@@ -6,6 +6,7 @@ import { readSessionCookie } from "@/lib/session";
 import { SessionModel } from "@/models/auth.model";
 import { maybeRunMaintenance, startMaintenanceLoop } from "@/models/maintenance";
 import { isOnboarded, UserModel, type User } from "@/models/user.model";
+import { ReputationModel } from "@/models/reputation.model";
 
 /**
  * Request authentication (the controller-side Data Access Layer).
@@ -18,8 +19,12 @@ export const currentUser = cache(async (): Promise<User | null> => {
   if (!token) return null;
   const session = await SessionModel.findValid(token);
   if (!session) return null;
-  const user = await UserModel.findById(session.userId);
+  let user = await UserModel.findById(session.userId);
   if (!user || user.status === "deleted") return null;
+  user = await UserModel.syncIdentity(user);
+  if (user.status === "active" && user.onboardedAt) {
+    user.ratingRestrictedUntil = await ReputationModel.assessRestriction(user.id);
+  }
   const now = Date.now();
   if (!user.lastSeenAt || now - user.lastSeenAt.getTime() > 5 * 60_000) {
     UserModel.touch(user.id).catch((error) => console.warn("[auth] could not update last seen", error));
@@ -34,6 +39,7 @@ export async function requireMember(): Promise<User> {
   const user = await currentUser();
   if (!user) redirect("/login");
   if (user.status === "suspended") redirect("/suspended");
+  if (user.ratingRestrictedUntil && user.ratingRestrictedUntil > new Date()) redirect("/restricted");
   if (!isOnboarded(user)) redirect("/onboarding");
   return user;
 }

@@ -113,14 +113,15 @@ export function LandingView() {
       </header>
       <main>
         <section className="landing-hero">
-          <Image src="/images/campus-walk.jpg" alt="Students spending time together on campus" fill loading="eager" fetchPriority="high" sizes="100vw" className="landing-heroPhoto" />
+          <Image src="/images/thapar-main.webp" alt="Thapar's campus building and open-air gathering space at dusk" fill loading="eager" fetchPriority="high" sizes="100vw" className="landing-heroPhoto" />
           <div className="landing-heroShade" aria-hidden="true" />
           <div className="landing-heroFrame" aria-hidden="true" />
           <div className="landing-heroContent">
-            <p className="landing-heroBrand">{APP.name}<span>{APP.tagline}</span></p>
-            <h1 className="landing-heroTitle">Don&apos;t do it alone.<br />Find someone to do it with.</h1>
+            <p className="landing-heroBrand">{APP.campusShort}<span>{APP.tagline}</span></p>
+            <h1 className="landing-heroTitle">{APP.name}</h1>
+            <p className="landing-heroHeadline">Don&apos;t do it alone.<br />Find someone to do it with.</p>
             <div className="landing-heroMoment" aria-hidden="true">
-              <span className="landing-photoChip"><Image src="/images/campus-friends.jpg" alt="" fill sizes="140px" /></span>
+              <span className="landing-photoChip"><Image src="/images/thapar-market.webp" alt="" fill sizes="140px" /></span>
               <MessageCircle size={30} strokeWidth={1.4} />
               <span>One plan. A little more together.</span>
             </div>
@@ -129,7 +130,7 @@ export function LandingView() {
               are free right now, for one activity, with no pressure to keep talking after.
             </p>
             <div className="landing-heroActions">
-              <Button asChild size="xl" className="landing-heroJoin"><Link href="/login">Join with your {APP.campusShort} email <ArrowRight /></Link></Button>
+              <Button asChild size="xl" className="landing-heroJoin"><Link href="/signup">Join with your {APP.campusShort} email <ArrowRight /></Link></Button>
               <a href="#how" className="landing-heroHow">How it works <ArrowRight size={16} /></a>
             </div>
           </div>
@@ -155,7 +156,7 @@ export function LandingView() {
                 <article className="landing-modeCard">
                   <div className="landing-modeTop"><span>0{i + 1}</span><ModeIcon size={22} strokeWidth={1.5} /></div>
                   <h3>{title}</h3>
-                  <div className="landing-modePhoto"><Image src={i === 1 ? "/images/campus-friends.jpg" : "/images/campus-walk.jpg"} alt={i === 1 ? "A group studying together" : "Students enjoying time between classes"} fill sizes="(max-width: 700px) 90vw, 33vw" /></div>
+                  <div className="landing-modePhoto"><Image src={["/images/thapar-market.webp", "/images/thapar-library.webp", "/images/thapar-main.webp"][i]} alt={["Students at a campus market", "A shared study table in the Thapar library", "Thapar's campus at dusk"][i]} fill sizes="(max-width: 700px) 90vw, 33vw" /></div>
                   <p>{body}</p>
                 </article>
               </Reveal>
@@ -220,9 +221,9 @@ export function LandingView() {
           </div>
         </section>
         <section className="landing-join">
-          <Image src="/images/campus-friends.jpg" alt="Friends sharing a moment while studying" fill sizes="100vw" className="landing-joinPhoto" />
+          <Image src="/images/thapar-market.webp" alt="Students spending time together at a Thapar campus market" fill sizes="100vw" className="landing-joinPhoto" />
           <div className="landing-joinShade" aria-hidden="true" />
-          <Reveal className="landing-joinContent"><p className="landing-eyebrow">A little moment. A new connection.</p><h2>Your next little thing<br />is waiting.</h2><p>Setup takes a minute: your name, one photo, and who you&apos;re comfortable meeting.</p><Button asChild size="xl" className="landing-heroJoin"><Link href="/login">Get started <ArrowRight /></Link></Button></Reveal>
+          <Reveal className="landing-joinContent"><p className="landing-eyebrow">A little moment. A new connection.</p><h2>Your next little thing<br />is waiting.</h2><p>Setup takes a minute: your campus details, one photo, and who you&apos;re comfortable meeting.</p><Button asChild size="xl" className="landing-heroJoin"><Link href="/signup">Get started <ArrowRight /></Link></Button></Reveal>
         </section>
       </main>
       <footer className="landing-footer"><div className="landing-inner"><Logo /><p>Made for the {APP.campusShort} community. Activity first, always.</p><Link href="/safety">Community guidelines <ArrowRight size={15} /></Link></div></footer>

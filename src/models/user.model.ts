@@ -1,13 +1,12 @@
 import "server-only";
 import { and, desc, eq, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db/client";
+import { campusIdentity } from "@/lib/campus-identity";
 import { photos, users, type ChatPolicy, type UserRow } from "./db/schema";
 
 export type User = UserRow;
 
 export type ProfileInput = {
-  firstName: string;
-  lastName: string;
   year: string;
   branch: string;
   bio: string | null;
@@ -31,10 +30,12 @@ export function isOnboarded(user: User): boolean {
   return Boolean(user.onboardedAt && user.firstName && user.gender && hasPhoto(user));
 }
 
-export const displayName = (user: Pick<User, "firstName" | "lastName">) =>
-  [user.firstName ?? "Member", user.lastName ? `${user.lastName.charAt(0).toUpperCase()}.` : ""]
+export const displayName = (user: Pick<User, "firstName" | "lastName"> & Partial<Pick<User, "email" | "status">>) => {
+  const identity = user.email && user.status !== "deleted" ? campusIdentity(user.email) : user;
+  return [identity.firstName ?? "Member", identity.lastName ? `${identity.lastName.charAt(0).toUpperCase()}.` : ""]
     .filter(Boolean)
     .join(" ");
+};
 
 export const UserModel = {
   async findById(id: string) {
@@ -58,21 +59,33 @@ export const UserModel = {
   /** Signs in an existing member or creates a brand-new one. */
   async findOrCreate(email: string, role: "member" | "admin") {
     const db = await getDb();
-    await db.insert(users).values({ email, role }).onConflictDoNothing({ target: users.email });
+    await db.insert(users).values({ email, role, ...campusIdentity(email) }).onConflictDoNothing({ target: users.email });
     const user = await UserModel.findByEmail(email);
     if (!user) throw new Error("Could not create user");
     if (role === "admin" && user.role !== "admin") {
       await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
       user.role = "admin";
     }
-    return user;
+    return UserModel.syncIdentity(user);
+  },
+
+  async syncIdentity(user: User): Promise<User> {
+    if (user.status === "deleted") return user;
+    const identity = campusIdentity(user.email);
+    if (user.firstName === identity.firstName && user.lastName === identity.lastName) return user;
+    const db = await getDb();
+    await db.update(users).set({ ...identity, updatedAt: new Date() }).where(eq(users.id, user.id));
+    return { ...user, ...identity };
   },
 
   async saveProfile(id: string, input: ProfileInput, gender?: "woman" | "man" | "nonbinary") {
     const db = await getDb();
+    const user = await UserModel.findById(id);
+    if (!user || user.status === "deleted") return;
+    const { year, branch, bio, interests, vibe } = input;
     await db
       .update(users)
-      .set({ ...input, ...(gender ? { gender } : {}), updatedAt: new Date() })
+      .set({ year, branch, bio, interests, vibe, ...campusIdentity(user.email), ...(gender ? { gender } : {}), updatedAt: new Date() })
       .where(eq(users.id, id));
   },
 

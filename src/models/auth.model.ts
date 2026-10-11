@@ -83,15 +83,21 @@ export const LoginCodeModel = {
       throw new DomainError("Too many wrong tries. Ask for a new code.", "locked");
     }
     if (!safeEqualHex(row.codeHash, sha256(`${email}:${code}`))) {
-      const left = RULES.otp.maxAttempts - row.attempts - 1;
-      await db.update(loginCodes).set({ attempts: row.attempts + 1 }).where(eq(loginCodes.id, row.id));
+      const [attempt] = await db.update(loginCodes)
+        .set({ attempts: sql`${loginCodes.attempts} + 1` })
+        .where(and(eq(loginCodes.id, row.id), isNull(loginCodes.consumedAt), lt(loginCodes.attempts, RULES.otp.maxAttempts)))
+        .returning({ attempts: loginCodes.attempts });
+      const left = RULES.otp.maxAttempts - (attempt?.attempts ?? RULES.otp.maxAttempts);
       throw new DomainError(
         left > 0 ? `That code isn't right. ${left} ${left === 1 ? "try" : "tries"} left.` : "Too many wrong tries. Ask for a new code.",
         "mismatch",
       );
     }
-    await db.update(loginCodes).set({ consumedAt: now }).where(eq(loginCodes.id, row.id));
-    return { passwordHash: row.passwordHash, flowHash: row.flowHash };
+    const [claimed] = await db.update(loginCodes).set({ consumedAt: now })
+      .where(and(eq(loginCodes.id, row.id), isNull(loginCodes.consumedAt), gt(loginCodes.expiresAt, now), lt(loginCodes.attempts, RULES.otp.maxAttempts)))
+      .returning({ passwordHash: loginCodes.passwordHash, flowHash: loginCodes.flowHash });
+    if (!claimed) throw new DomainError("That code was already used or expired. Ask for a new one.", "expired");
+    return claimed;
   },
 
   /** Removes an unused code that never reached the member (e.g. the email failed to send). */

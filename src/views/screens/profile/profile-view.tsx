@@ -2,8 +2,10 @@
 
 import { ArrowLeft, Eye, MessageCircleOff, Pencil, Settings } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import type { ActionState } from "@/lib/action";
 import { cn } from "@/lib/utils";
+import { RULES } from "@/config/app";
 import { ReputationLine, SectionTitle } from "@/views/components/bits";
 import { Icon } from "@/views/components/icons";
 import { MemberAvatar } from "@/views/components/member-avatar";
@@ -45,9 +47,9 @@ export function ProfileView({
       <section className="glass-strong relative animate-glass-in overflow-hidden">
         <div
           aria-hidden="true"
-          className="relative h-28 overflow-hidden border-b border-border bg-primary [background-image:linear-gradient(color-mix(in_oklab,var(--primary-foreground)_12%,transparent)_1px,transparent_1px),linear-gradient(90deg,color-mix(in_oklab,var(--primary-foreground)_12%,transparent)_1px,transparent_1px)] [background-size:24px_24px]"
+          className="relative h-36 overflow-hidden border-b border-border bg-primary"
         >
-          <div className="absolute inset-y-0 -left-1/3 w-1/3 animate-sweep bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          <Image src="/images/thapar-main.webp" alt="" fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 768px" className="object-cover object-[center_40%]" />
         </div>
         <div className="relative -mt-16 px-6 pb-7 text-center">
           <MemberAvatar
@@ -59,6 +61,7 @@ export function ProfileView({
           <h1 className="mt-5 text-[2rem] leading-tight tracking-[-0.035em]">{m.name}</h1>
           <p className="mt-1 text-muted-foreground">{[m.year, m.branch].filter(Boolean).join(" · ")}</p>
           <ReputationLine reputation={m.reputation} className="mt-2 justify-center text-sm" />
+          {m.reputation.rating !== null && <p className="mt-1 text-xs text-muted-foreground">{m.reputation.summary}</p>}
           {m.bio && <p className="mx-auto mt-4 max-w-md leading-relaxed">{m.bio}</p>}
           {(m.vibe || m.interests.length > 0) && (
             <div className="mt-5 flex flex-wrap justify-center gap-1.5">
@@ -124,6 +127,22 @@ export function ProfileView({
               <p className="mt-1 label-caps text-[0.6rem] text-muted-foreground">{s.label}</p>
             </div>
           ))}
+        </section>
+      )}
+
+      {vm.stats && (
+        <section className="space-y-4 border-y border-border py-6">
+          <SectionTitle>Reliability</SectionTitle>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+            {[
+              { label: "Accepted plans", value: vm.stats.acceptedPlans },
+              { label: "Requests declined", value: vm.stats.declinedRequests },
+              { label: "Confirmed no-shows", value: vm.stats.noShows },
+              { label: "Late cancellations", value: vm.stats.lateCancels },
+            ].map((s) => <div key={s.label}><p className="text-2xl font-medium">{s.value}</p><p className="mt-1 text-xs text-muted-foreground">{s.label}</p></div>)}
+          </div>
+          <p className="text-sm leading-relaxed text-muted-foreground">A five-point score based on showing up. Late cancellations carry half the weight of a no-show. Declines, early notice and safety cancellations never lower your score. Below {RULES.ratingRestrictionThreshold} / 5 after {RULES.ratingMinCommitments} outcomes means a {RULES.ratingRestrictionHours}-hour pause.</p>
+          {vm.stats.pendingReports > 0 && <p className="text-sm text-warning">{vm.stats.pendingReports} no-show report{vm.stats.pendingReports === 1 ? " is" : "s are"} awaiting corroboration or moderator review.</p>}
         </section>
       )}
 

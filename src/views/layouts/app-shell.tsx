@@ -6,6 +6,7 @@ import {
   House,
   LifeBuoy,
   MessageCircle,
+  MapPin,
   Plus,
   Settings,
   UserRound,
@@ -14,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/views/components/logo";
 import { ThemeToggle } from "@/views/components/theme-toggle";
@@ -59,12 +61,13 @@ function SideNav({ pathname, messagesBadge }: { pathname: string | null; message
             className={cn(
               "relative flex h-11 items-center gap-3 rounded-full px-4 text-sm transition-[background-color,color,transform] duration-300",
               active
-                ? "bg-primary text-primary-foreground"
+                ? "text-primary-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
-            <Icon className="size-[17px]" strokeWidth={1.75} />
-            {label}
+            {active && <motion.span layoutId="sidebar-active" className="absolute inset-0 rounded-full bg-primary shadow-sm" transition={{ type: "spring", stiffness: 380, damping: 34 }} />}
+            <Icon className="relative size-[17px]" strokeWidth={1.75} />
+            <span className="relative">{label}</span>
             {href === MESSAGES_NAV.href && messagesBadge}
           </Link>
         );
@@ -94,12 +97,13 @@ function TabItem({
         href={href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex flex-col items-center gap-1 rounded-full py-2 text-[10px] transition-colors",
+          "relative flex flex-col items-center gap-1 rounded-full py-2 text-[10px] transition-colors",
           active ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        <Icon className="size-[21px]" strokeWidth={active ? 2.2 : 1.6} />
-        {label}
+        {active && <motion.span layoutId="mobile-active" className="absolute inset-x-1 inset-y-0 rounded-full bg-accent" transition={{ type: "spring", stiffness: 400, damping: 35 }} />}
+        <Icon className="relative size-[21px]" strokeWidth={active ? 2.2 : 1.6} />
+        <span className="relative">{label}</span>
       </Link>
     </li>
   );
@@ -171,10 +175,11 @@ export function AppShell({ children, bell, messages, messagesBadge, avatar, admi
       <div className="min-w-0">
         {/* Top bar */}
         <header className="app-topbar glass sticky top-0 z-30 border-x-0 border-t-0 lg:top-4 lg:rounded-full lg:border lg:border-border">
-          <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5 lg:h-14 lg:justify-end">
+          <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5 lg:h-14">
             <Link href="/board" className="lg:hidden">
               <Logo />
             </Link>
+            <span className="hidden items-center gap-2 text-xs text-muted-foreground lg:flex"><MapPin className="size-3.5" /> Thapar campus</span>
             <div className="flex items-center gap-1">
               {messages}
               {bell}

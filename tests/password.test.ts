@@ -62,6 +62,14 @@ describe("passwords in the database", () => {
     expect(await LoginCodeModel.verify(email, code)).toEqual({ passwordHash: null, flowHash: null });
   });
 
+  it("consumes a verification code only once, including concurrent submissions", async () => {
+    const email = "concurrent-code@thapar.edu";
+    const code = await LoginCodeModel.issue(email);
+    const results = await Promise.allSettled([LoginCodeModel.verify(email, code), LoginCodeModel.verify(email, code)]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    await expect(LoginCodeModel.verify(email, code)).rejects.toThrow();
+  });
+
   it("'resend' keeps the password only for the browser that chose it", async () => {
     const email = "resend-pw@thapar.edu";
     const flowHash = sha256("this-browser");
