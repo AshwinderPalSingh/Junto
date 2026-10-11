@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AuthController } from "@/controllers/auth.controller";
-import { requestCode } from "@/controllers/auth.actions";
+import { requestCode, signInWithPassword } from "@/controllers/auth.actions";
 import { AuthFrame } from "@/views/screens/auth/auth-frame";
 import { FormSkeleton } from "@/views/screens/auth/form-skeleton";
 import { LoginView } from "@/views/screens/auth/login-view";
@@ -21,5 +21,5 @@ export default function LoginPage() {
 
 async function LoginContent() {
   const data = await AuthController.login();
-  return <LoginView domain={data.domain} requestCode={requestCode} />;
+  return <LoginView domain={data.domain} signIn={signInWithPassword} requestCode={requestCode} />;
 }

@@ -24,6 +24,30 @@ export async function clearSessionCookie() {
   (await cookies()).delete(SESSION_COOKIE);
 }
 
+/**
+ * Account creation and password resets: a random token kept in the browser that
+ * chose the new password. The password only applies if the code is entered there.
+ */
+const FLOW_COOKIE = "junto_password_flow";
+
+export async function writeFlowCookie(token: string) {
+  (await cookies()).set(FLOW_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: (await requestOrigin()).startsWith("https://"),
+    path: "/",
+    maxAge: 30 * 60,
+  });
+}
+
+export async function readFlowCookie() {
+  return (await cookies()).get(FLOW_COOKIE)?.value ?? null;
+}
+
+export async function clearFlowCookie() {
+  (await cookies()).delete(FLOW_COOKIE);
+}
+
 export async function requestUserAgent() {
   return (await headers()).get("user-agent");
 }

@@ -1,14 +1,20 @@
 import "server-only";
-import { and, desc, eq, gt, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lt, ne, sql } from "drizzle-orm";
 import { RULES } from "@/config/app";
 import { randomDigits, randomToken, safeEqualHex, sha256 } from "@/lib/crypto";
 import { DomainError } from "@/lib/errors";
 import { getDb } from "./db/client";
 import { loginCodes, sessions } from "./db/schema";
 
+/** A password chosen during sign-up or a reset, waiting for the inbox owner to confirm it. */
+export type PendingPassword =
+  | { passwordHash: string; flowHash: string }
+  /** "Resend code": keep the password chosen in this same browser, if there is one. */
+  | { carryFlowHash: string };
+
 /** One-time email codes. Only a hash of each code is stored. */
 export const LoginCodeModel = {
-  async issue(email: string) {
+  async issue(email: string, pending?: PendingPassword) {
     const db = await getDb();
     const now = new Date();
     const windowStart = new Date(now.getTime() - RULES.otp.windowMinutes * 60_000);
@@ -29,6 +35,25 @@ export const LoginCodeModel = {
     if (waitMs > 0) {
       throw new DomainError(`Please wait ${Math.ceil(waitMs / 1000)} seconds before asking for another code.`, "too_soon");
     }
+    let password: { passwordHash: string | null; flowHash: string | null } = { passwordHash: null, flowHash: null };
+    if (pending && "passwordHash" in pending) {
+      password = pending;
+    } else if (pending) {
+      const [previous] = await db
+        .select({ passwordHash: loginCodes.passwordHash, flowHash: loginCodes.flowHash })
+        .from(loginCodes)
+        .where(
+          and(
+            eq(loginCodes.email, email),
+            isNull(loginCodes.consumedAt),
+            gt(loginCodes.expiresAt, now),
+            eq(loginCodes.flowHash, pending.carryFlowHash),
+          ),
+        )
+        .orderBy(desc(loginCodes.createdAt))
+        .limit(1);
+      if (previous) password = previous;
+    }
     await db
       .update(loginCodes)
       .set({ consumedAt: now })
@@ -38,6 +63,8 @@ export const LoginCodeModel = {
       email,
       codeHash: sha256(`${email}:${code}`),
       expiresAt: new Date(now.getTime() + RULES.otp.ttlMinutes * 60_000),
+      passwordHash: password.passwordHash,
+      flowHash: password.flowHash,
     });
     return code;
   },
@@ -64,6 +91,7 @@ export const LoginCodeModel = {
       );
     }
     await db.update(loginCodes).set({ consumedAt: now }).where(eq(loginCodes.id, row.id));
+    return { passwordHash: row.passwordHash, flowHash: row.flowHash };
   },
 
   /** Removes an unused code that never reached the member (e.g. the email failed to send). */
@@ -111,6 +139,12 @@ export const SessionModel = {
   async destroy(token: string) {
     const db = await getDb();
     await db.delete(sessions).where(eq(sessions.tokenHash, sha256(token)));
+  },
+
+  /** Signs a member out everywhere except the session holding `keepToken`. */
+  async destroyAllExcept(userId: string, keepToken: string) {
+    const db = await getDb();
+    await db.delete(sessions).where(and(eq(sessions.userId, userId), ne(sessions.tokenHash, sha256(keepToken))));
   },
 
   async destroyAllForUser(userId: string) {

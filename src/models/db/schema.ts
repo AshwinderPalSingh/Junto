@@ -98,6 +98,12 @@ export const users = pgTable(
     groupPref: groupPrefEnum("group_pref").notNull().default("both"),
     vibe: vibeEnum("vibe"),
     chatPolicy: chatPolicyEnum("chat_policy").notNull().default("anyone"),
+    /** scrypt hash; null for members who only sign in with email codes. */
+    passwordHash: text("password_hash"),
+    passwordUpdatedAt: ts("password_updated_at"),
+    /** Consecutive wrong passwords; reaching the limit locks password sign-in for a while. */
+    failedLogins: smallint("failed_logins").notNull().default(0),
+    lockedUntil: ts("locked_until"),
     /** Set while a photo is stored; also its cache-busting version. */
     photoUpdatedAt: ts("photo_updated_at"),
     photoRejectedAt: ts("photo_rejected_at"),
@@ -154,6 +160,13 @@ export const loginCodes = pgTable(
     attempts: integer("attempts").notNull().default(0),
     expiresAt: ts("expires_at").notNull(),
     consumedAt: ts("consumed_at"),
+    /**
+     * Account creation and password resets: the chosen password (hashed) waits on the
+     * code until the inbox owner enters it, and only applies in the browser that chose it
+     * (`flow_hash` = hash of a cookie set there).
+     */
+    passwordHash: text("password_hash"),
+    flowHash: text("flow_hash"),
     createdAt: ts("created_at").notNull().defaultNow(),
   },
   (t) => [index("login_codes_email_idx").on(t.email, t.createdAt)],

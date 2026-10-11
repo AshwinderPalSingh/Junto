@@ -14,5 +14,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     testTimeout: 60_000,
     hookTimeout: 60_000,
+    // Cheaper password hashing in tests (production uses the full OWASP cost).
+    env: { PASSWORD_HASH_LOG_N: "10" },
   },
 });

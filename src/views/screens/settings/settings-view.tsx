@@ -2,12 +2,13 @@
 
 import { LogOut, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { GENDERS } from "@/config/profile";
 import { idleState, type ActionState } from "@/lib/action";
 import { PageHeader } from "@/views/components/bits";
 import { ChoiceCard } from "@/views/components/choice";
-import { FormMessage, SubmitButton } from "@/views/components/form-bits";
+import { FormMessage, SubmitButton, fieldError } from "@/views/components/form-bits";
+import { PasswordHint, PasswordInput } from "@/views/components/password-input";
 import { MemberAvatar } from "@/views/components/member-avatar";
 import { ThemeToggle } from "@/views/components/theme-toggle";
 import { useActionToast } from "@/views/hooks/use-action-toast";
@@ -21,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/views/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/views/ui/field";
 import { Input } from "@/views/ui/input";
 import type { SettingsVM } from "@/views/view-models";
 import { PushToggle } from "./push-toggle";
@@ -29,6 +31,7 @@ type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
 export type SettingsActions = {
   savePreferences: Action;
+  savePassword: Action;
   saveChatPolicy: Action;
   savePushSubscription: (json: string) => Promise<ActionState>;
   removePushSubscription: (endpoint: string) => Promise<ActionState>;
@@ -112,6 +115,69 @@ const CHAT_POLICIES = [
   { id: "nobody", title: "Nobody", description: "No new direct chats. Plan group chats still work." },
 ] as const;
 
+function PasswordForm({ email, hasPassword, action }: { email: string; hasPassword: boolean; action: Action }) {
+  const [state, formAction] = useActionState(action, idleState);
+  const [current, setCurrent] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const mismatch = confirm.length > 0 && confirm !== password;
+  useActionToast(state, {
+    onSuccess: () => {
+      setCurrent("");
+      setPassword("");
+      setConfirm("");
+    },
+  });
+  return (
+    <form action={formAction} className="max-w-sm space-y-4">
+      {/* Lets password managers save the new password against the right account. */}
+      <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
+      {hasPassword && (
+        <Field data-invalid={Boolean(fieldError(state, "current"))}>
+          <FieldLabel htmlFor="current-password">Current password</FieldLabel>
+          <PasswordInput
+            id="current-password"
+            name="current"
+            autoComplete="current-password"
+            required
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+          />
+          <FieldError>{fieldError(state, "current")}</FieldError>
+        </Field>
+      )}
+      <Field data-invalid={Boolean(fieldError(state, "password"))}>
+        <FieldLabel htmlFor="new-password">{hasPassword ? "New password" : "Password"}</FieldLabel>
+        <PasswordInput
+          id="new-password"
+          name="password"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          maxLength={128}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {fieldError(state, "password") ? <FieldError>{fieldError(state, "password")}</FieldError> : <PasswordHint value={password} />}
+      </Field>
+      <Field data-invalid={mismatch}>
+        <FieldLabel htmlFor="confirm-password">Confirm {hasPassword ? "new password" : "password"}</FieldLabel>
+        <PasswordInput
+          id="confirm-password"
+          name="confirm"
+          autoComplete="new-password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
+        <FieldError>{mismatch ? "The two passwords don't match." : fieldError(state, "confirm")}</FieldError>
+      </Field>
+      <FormMessage state={state} />
+      <SubmitButton variant="outline">{hasPassword ? "Change password" : "Create password"}</SubmitButton>
+    </form>
+  );
+}
+
 function ChatPolicyForm({ policy, action }: { policy: SettingsVM["chatPolicy"]; action: Action }) {
   const [state, formAction] = useActionState(action, idleState);
   useActionToast(state);
@@ -158,7 +224,18 @@ export function SettingsView({ vm, actions }: { vm: SettingsVM; actions: Setting
         </form>
       </Section>
 
-      <Section title="Appearance" description="Light is black on white. Dark is grey on black. Both are glass.">
+      <Section
+        title="Password"
+        description={
+          vm.hasPassword
+            ? "Changing it signs you out on your other devices."
+            : "You sign in with email codes. Add a password to sign in faster; codes keep working too."
+        }
+      >
+        <PasswordForm email={vm.email} hasPassword={vm.hasPassword} action={actions.savePassword} />
+      </Section>
+
+      <Section title="Appearance" description="Light mode uses frosted glass. Dark mode uses calm, solid surfaces.">
         <ThemeToggle />
       </Section>
 

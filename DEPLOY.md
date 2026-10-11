@@ -99,9 +99,16 @@ trade-off is that Vercel runs code in short-lived functions: live chat reconnect
    ```
 
 4. **Deploy.**
-5. **Optional: reminders on time when the site is quiet.** Create a free job at
+5. **Keep the app next to the database.** `vercel.json` pins Vercel's functions to Singapore (`sin1`),
+   the same region as the Neon database. If you create the database elsewhere, change both together:
+   every page makes several database queries, and an ocean between them adds seconds.
+6. **Stay inside Neon's free hours.** In Neon, set the compute size to a fixed **0.25 CU** (Branches →
+   your branch → Edit compute). The free plan includes about 100 compute-hours a month, and the database
+   sleeps when nobody is using the site; Junto doesn't wake it in the background on Vercel.
+7. **Optional: reminders on time when the site is quiet.** Create a free job at
    [cron-job.org](https://cron-job.org) that calls `https://<your site>/api/cron/maintenance` every
-   10 minutes with the header `Authorization: Bearer <CRON_SECRET>`.
+   30 minutes with the header `Authorization: Bearer <CRON_SECRET>`. (More often keeps Neon's free
+   database awake and uses up its hours.)
 
 ---
 

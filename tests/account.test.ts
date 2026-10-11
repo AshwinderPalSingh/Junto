@@ -24,7 +24,7 @@ describe("sign-in codes", () => {
     const email = "once@thapar.edu";
     const code = await LoginCodeModel.issue(email);
     expect(code).toMatch(new RegExp(`^\\d{${RULES.otp.length}}$`));
-    await expect(LoginCodeModel.verify(email, code)).resolves.toBeUndefined();
+    await expect(LoginCodeModel.verify(email, code)).resolves.toEqual({ passwordHash: null, flowHash: null });
     await expect(LoginCodeModel.verify(email, code)).rejects.toMatchObject({ code: "expired" });
   });
 
@@ -44,7 +44,7 @@ describe("sign-in codes", () => {
     if (first !== second) {
       await expect(LoginCodeModel.verify(email, first)).rejects.toMatchObject({ code: "mismatch" });
     }
-    await expect(LoginCodeModel.verify(email, second)).resolves.toBeUndefined();
+    await expect(LoginCodeModel.verify(email, second)).resolves.toEqual({ passwordHash: null, flowHash: null });
   });
 
   it("counts wrong tries down and then locks the code", async () => {

@@ -40,13 +40,35 @@ function sender() {
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-export function loginCodeEmail(code: string) {
-  const subject = `${code} is your ${APP.name} sign-in code`;
+/** What a code is for: signing in, creating an account, or resetting a password. */
+export type CodeIntent = "login" | "signup" | "reset";
+
+const INTENT_COPY: Record<CodeIntent, { subject: string; heading: string; ignore: string }> = {
+  login: {
+    subject: "sign-in code",
+    heading: "Your sign-in code",
+    ignore: "If you didn't try to sign in, ignore this email. Nobody can sign in without the code.",
+  },
+  signup: {
+    subject: "code to create your account",
+    heading: "Confirm your email",
+    ignore: "If you didn't try to create an account, ignore this email. Nothing happens without the code.",
+  },
+  reset: {
+    subject: "password reset code",
+    heading: "Reset your password",
+    ignore: "If you didn't ask to reset your password, ignore this email. Your password won't change.",
+  },
+};
+
+export function loginCodeEmail(code: string, intent: CodeIntent = "login") {
+  const copy = INTENT_COPY[intent];
+  const subject = `${code} is your ${APP.name} ${copy.subject}`;
   const text = [
-    `Your ${APP.name} sign-in code is ${code}.`,
+    `Your ${APP.name} ${copy.subject} is ${code}.`,
     "",
     `It expires in ${RULES.otp.ttlMinutes} minutes and can only be used once.`,
-    "If you didn't try to sign in, you can ignore this email.",
+    copy.ignore,
     "",
     `${APP.name} · ${APP.campus}`,
   ].join("\n");
@@ -56,11 +78,11 @@ export function loginCodeEmail(code: string) {
 <tr><td align="center">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:440px;background:#ffffff;border:1px solid #e5e5e5">
 <tr><td style="padding:32px 32px 0;font-size:15px;font-weight:600;letter-spacing:-0.01em">${escapeHtml(APP.name)}</td></tr>
-<tr><td style="padding:24px 32px 0;font-size:22px;font-weight:600;letter-spacing:-0.02em">Your sign-in code</td></tr>
+<tr><td style="padding:24px 32px 0;font-size:22px;font-weight:600;letter-spacing:-0.02em">${escapeHtml(copy.heading)}</td></tr>
 <tr><td style="padding:20px 32px 0">
 <div style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:34px;font-weight:600;letter-spacing:10px;padding:18px 0;text-align:center;background:#0a0a0a;color:#ffffff">${escapeHtml(code)}</div>
 </td></tr>
-<tr><td style="padding:20px 32px 0;font-size:14px;line-height:1.6;color:#525252">It expires in ${RULES.otp.ttlMinutes} minutes and can only be used once. If you didn't try to sign in, ignore this email — nobody can sign in without the code.</td></tr>
+<tr><td style="padding:20px 32px 0;font-size:14px;line-height:1.6;color:#525252">It expires in ${RULES.otp.ttlMinutes} minutes and can only be used once. ${escapeHtml(copy.ignore)}</td></tr>
 <tr><td style="padding:28px 32px 32px;font-size:12px;color:#a3a3a3">${escapeHtml(APP.name)} · ${escapeHtml(APP.campus)}</td></tr>
 </table>
 </td></tr>
@@ -88,7 +110,7 @@ async function deliver(to: string, message: { subject: string; text: string; htm
 }
 
 /** Sends a sign-in code. Throws a DomainError with a user-safe message on failure. */
-export async function sendLoginCode(email: string, code: string) {
+export async function sendLoginCode(email: string, code: string, intent: CodeIntent = "login") {
   if (mailTransport() === "none") {
     if (isProduction()) {
       console.error("[mail] Sign-in email is not configured. Set SMTP_HOST/SMTP_USER/SMTP_PASS or RESEND_API_KEY.");
@@ -98,7 +120,7 @@ export async function sendLoginCode(email: string, code: string) {
     return;
   }
   try {
-    await deliver(email, loginCodeEmail(code));
+    await deliver(email, loginCodeEmail(code, intent));
   } catch (error) {
     console.error("[mail] Could not send sign-in code", error);
     throw new DomainError("We couldn't send the email. Check the address and try again in a minute.", "mail_failed");

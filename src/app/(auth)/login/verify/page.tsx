@@ -24,6 +24,7 @@ async function VerifyContent({ searchParams }: Pick<PageProps<"/login/verify">, 
   return (
     <VerifyView
       email={data.email}
+      intent={data.intent}
       codeLength={data.codeLength}
       resendAfterSeconds={data.resendAfterSeconds}
       ttlMinutes={data.ttlMinutes}

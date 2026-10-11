@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { failure, invalid, success, type ActionState } from "@/lib/action";
 import { sendPush } from "@/lib/push";
-import { clearSessionCookie } from "@/lib/session";
+import { hashPassword, newPasswordSchema, verifyPassword } from "@/lib/password";
+import { rateLimit } from "@/lib/rate-limit";
+import { clearSessionCookie, readSessionCookie } from "@/lib/session";
 import { SessionModel } from "@/models/auth.model";
 import { AvailabilityModel } from "@/models/availability.model";
 import { ChatModel } from "@/models/chat.model";
@@ -18,6 +20,34 @@ const subscriptionSchema = z.object({
   endpoint: z.url().max(2000),
   keys: z.object({ p256dh: z.string().min(10).max(500), auth: z.string().min(4).max(200) }),
 });
+
+const passwordSchema = z
+  .object({ current: z.string().max(200).optional(), password: newPasswordSchema, confirm: z.string() })
+  .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The two passwords don't match." });
+
+/** POST: create a password (accounts made with email codes) or change the existing one. */
+export async function savePassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await requireMember();
+  const parsed = passwordSchema.safeParse({
+    current: formData.get("current") ?? undefined,
+    password: formData.get("password"),
+    confirm: formData.get("confirm"),
+  });
+  if (!parsed.success) return invalid(parsed.error);
+  if (!rateLimit(`password:${user.id}`, 10, 15 * 60_000).ok) return failure("Too many attempts. Try again in a few minutes.");
+  if (user.passwordHash && !(await verifyPassword(parsed.data.current ?? "", user.passwordHash))) {
+    return failure("Your current password isn't right.", { current: ["Your current password isn't right."] });
+  }
+  await UserModel.setPassword(user.id, await hashPassword(parsed.data.password));
+  const token = await readSessionCookie();
+  if (token) await SessionModel.destroyAllExcept(user.id, token);
+  refresh();
+  return success(
+    user.passwordHash
+      ? "Password changed. Your other devices have been signed out."
+      : "Password created. Next time you can sign in with it.",
+  );
+}
 
 const chatPolicySchema = z.enum(["anyone", "met", "nobody"], "Choose who can start a chat with you.");
 

@@ -12,11 +12,18 @@ export const emailSchema = z
   .toLowerCase()
   .pipe(z.email("Enter a valid email address."));
 
-/** GET handlers for the sign-in screens. */
+export const codeIntentSchema = z.enum(["login", "signup", "reset"]).catch("login");
+
+/** Signed-in members don't need the sign-in screens. */
+async function leaveIfSignedIn() {
+  const user = await currentUser();
+  if (user) redirect(isOnboarded(user) ? "/board" : "/onboarding");
+}
+
+/** GET handlers for the sign-in screens (/login, /signup, /login/reset, /login/verify). */
 export const AuthController = {
   async login() {
-    const user = await currentUser();
-    if (user) redirect(isOnboarded(user) ? "/board" : "/onboarding");
+    await leaveIfSignedIn();
     return { domain: allowedEmailDomains()[0] ?? "thapar.edu" };
   },
 
@@ -24,10 +31,10 @@ export const AuthController = {
     const params = await searchParams;
     const parsed = emailSchema.safeParse(params.email);
     if (!parsed.success) redirect("/login");
-    const user = await currentUser();
-    if (user) redirect(isOnboarded(user) ? "/board" : "/onboarding");
+    await leaveIfSignedIn();
     return {
       email: parsed.data,
+      intent: codeIntentSchema.parse(params.intent),
       codeLength: RULES.otp.length,
       resendAfterSeconds: RULES.otp.resendAfterSeconds,
       ttlMinutes: RULES.otp.ttlMinutes,

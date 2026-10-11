@@ -75,8 +75,10 @@ export function LiveEvents() {
   useEffect(() => {
     let source: EventSource | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
-    let reconnecting = false;
+    /** Something may have happened while disconnected: catch up on the next connection. */
+    let missed = false;
     let stopped = false;
 
     const parse = <T,>(e: Event) => {
@@ -87,45 +89,86 @@ export function LiveEvents() {
       }
     };
 
-    const connect = () => {
-      source = new EventSource("/api/events");
-      source.addEventListener("ready", () => {
+    const close = () => {
+      source?.close();
+      source = null;
+      clearTimeout(retryTimer);
+    };
+
+    const open = () => {
+      if (source || stopped) return;
+      // Hidden tabs wait until they're looked at (see onVisibility).
+      if (document.visibilityState === "hidden") {
+        missed = true;
+        return;
+      }
+      const es = new EventSource("/api/events");
+      source = es;
+      // Events from a connection we've already replaced are ignored.
+      const current = () => source === es;
+      es.addEventListener("ready", () => {
+        if (!current()) return;
         attempts = 0;
-        if (reconnecting) {
-          reconnecting = false;
-          // Anything missed while offline: open chats catch up, the screen refreshes.
+        if (missed) {
+          missed = false;
           window.dispatchEvent(new Event(RECONNECTED_EVENT));
           refreshSoon();
         }
       });
-      source.addEventListener("notification", (e) => {
-        const data = parse<NotificationEvent>(e);
+      es.addEventListener("notification", (e) => {
+        const data = current() ? parse<NotificationEvent>(e) : null;
         if (data) onNotification(data);
       });
-      source.addEventListener("plan", (e) => {
-        const data = parse<PlanEvent>(e);
+      es.addEventListener("plan", (e) => {
+        const data = current() ? parse<PlanEvent>(e) : null;
         if (data) onPlan(data);
       });
-      source.addEventListener("chat", (e) => {
-        const data = parse<ChatEvent>(e);
+      es.addEventListener("chat", (e) => {
+        const data = current() ? parse<ChatEvent>(e) : null;
         if (data) onChat(data);
       });
-      source.onerror = () => {
-        source?.close();
+      // The server ends each stream on schedule; reconnect straight away.
+      es.addEventListener("bye", () => {
+        if (!current()) return;
+        close();
+        missed = true;
+        open();
+      });
+      es.onerror = () => {
+        if (!current()) return;
+        close();
         if (stopped) return;
-        reconnecting = true;
+        missed = true;
         attempts += 1;
-        retryTimer = setTimeout(connect, Math.min(30_000, 1_000 * 2 ** attempts));
+        retryTimer = setTimeout(open, Math.min(30_000, 1_000 * 2 ** attempts));
       };
     };
 
-    connect();
+    // A tab left in the background lets its connection go after a minute (sparing the server and
+    // database), and reconnects, catching up, as soon as it is looked at again.
+    const onVisibility = () => {
+      clearTimeout(hideTimer);
+      if (document.visibilityState === "hidden") {
+        hideTimer = setTimeout(() => {
+          if (!source) return;
+          close();
+          missed = true;
+        }, 60_000);
+      } else if (!source) {
+        missed = true;
+        open();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    open();
     const timer = refreshTimer;
     return () => {
       stopped = true;
-      source?.close();
-      clearTimeout(retryTimer);
+      close();
+      clearTimeout(hideTimer);
       clearTimeout(timer.current);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

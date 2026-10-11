@@ -66,7 +66,7 @@ on `/api/health`.
 
 | Area | Features |
 |---|---|
-| **Verified access** | One-time email codes for allowed domains only (`@thapar.edu`): codes are hashed, expire in 10 minutes, allow 5 tries, have a 30-second resend cooldown and are rate-limited per address and network. Sessions are database-backed httpOnly cookies. 18+ confirmation and community guidelines. |
+| **Verified access** | Only allowed campus domains (`@thapar.edu`). Sign in with **email + password** or a **one-time email code**. Creating an account and resetting a password both confirm the inbox with a code, and the new password only applies in the browser that chose it. Passwords are hashed with scrypt; 5 wrong tries pause password sign-in for 15 minutes; a reset or change signs out other devices. Codes are hashed, expire in 10 minutes, allow 5 tries, have a 30-second resend cooldown and are rate-limited per address and network. Sessions are database-backed httpOnly cookies. |
 | **Profile** | Name, year, department, up to 5 interests, vibe, short bio and **exactly one mandatory profile photo**: chosen, dropped, pasted or taken with the camera, then cropped in the browser and re-encoded on the server with location data stripped. Stored in Postgres and served only to signed-in members. Gender is locked after setup. |
 | **Private preferences** | Who you're comfortable meeting, and one-on-one versus groups. Never shown on any profile; used as hard filters in both directions. |
 | **Board** | Plans happening soon and later, filters by activity, one-tap posting, "N people free right now", your upcoming meetups. |
@@ -82,8 +82,9 @@ on `/api/health`.
 | **Live** | Server-Sent Events for instant updates and chat messages, fanned out between server instances with Postgres `LISTEN/NOTIFY`, and Web Push when the app is closed (installable PWA). |
 | **Moderation** | Metrics (fulfilment, completion, repeat use, time to first request, new connections, reports per 100 meetups), reports queue, suspend/reinstate, photo review. |
 
-Design: neutral surfaces with frosted, translucent glass panels, rounded controls, and glass-in, sheen and
-scroll-reveal animations in light and dark mode. Motion is reduced automatically for people who ask for it.
+Design: light mode uses frosted, translucent glass panels; dark mode uses calm, solid surfaces. Both have
+rounded controls and glass-in and scroll-reveal animations. Motion is reduced automatically for people who
+ask for it.
 
 ---
 

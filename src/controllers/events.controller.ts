@@ -1,7 +1,13 @@
 import "server-only";
 import { subscribe, type LiveEvent } from "@/lib/realtime";
-import { maybeRunMaintenance } from "@/models/maintenance";
 import { currentUser } from "./guards";
+
+/**
+ * Streams end on their own before the host would cut them off (Vercel functions
+ * stop after 300 seconds), and the browser reconnects straight away. Long-running
+ * servers keep them open longer.
+ */
+const STREAM_LIFETIME_MS = process.env.VERCEL ? 240_000 : 30 * 60_000;
 
 /**
  * GET /api/events — a Server-Sent Events stream of this member's live
@@ -29,13 +35,16 @@ export const EventsController = {
         write("retry: 5000\n\n");
         write(`event: ready\ndata: {}\n\n`);
         const unsubscribe = subscribe(user.id, send);
-        const heartbeat = setInterval(() => {
-          write(": ping\n\n");
-          void maybeRunMaintenance();
-        }, 25_000);
+        // A comment line keeps proxies from closing an idle stream. It touches no database.
+        const heartbeat = setInterval(() => write(": ping\n\n"), 25_000);
+        const lifetime = setTimeout(() => {
+          write(`event: bye\ndata: {}\n\n`);
+          cleanup();
+        }, STREAM_LIFETIME_MS);
 
         cleanup = () => {
           clearInterval(heartbeat);
+          clearTimeout(lifetime);
           unsubscribe();
           cleanup = () => {};
           try {

@@ -20,6 +20,9 @@ export type PreferencesInput = {
   groupPref: "both" | "one_on_one" | "group";
 };
 
+/** Wrong passwords allowed in a row, and how long password sign-in then pauses. */
+export const LOGIN_LOCK = { attempts: 5, minutes: 15 } as const;
+
 export const hasPhoto = (user: Pick<User, "photoUpdatedAt" | "photoRejectedAt">) =>
   Boolean(user.photoUpdatedAt && !user.photoRejectedAt);
 
@@ -108,6 +111,39 @@ export const UserModel = {
       .where(eq(photos.userId, id))
       .limit(1);
     return row ?? null;
+  },
+
+  /** Sets (or replaces) the member's password and clears any lockout. */
+  async setPassword(id: string, passwordHash: string) {
+    const db = await getDb();
+    const now = new Date();
+    await db
+      .update(users)
+      .set({ passwordHash, passwordUpdatedAt: now, failedLogins: 0, lockedUntil: null, updatedAt: now })
+      .where(eq(users.id, id));
+  },
+
+  /** A wrong password. After LOGIN_LOCK.attempts in a row, password sign-in pauses for a while. */
+  async recordFailedLogin(id: string) {
+    const db = await getDb();
+    const [row] = await db
+      .update(users)
+      .set({ failedLogins: sql`${users.failedLogins} + 1` })
+      .where(eq(users.id, id))
+      .returning({ failedLogins: users.failedLogins });
+    if ((row?.failedLogins ?? 0) >= LOGIN_LOCK.attempts) {
+      await db
+        .update(users)
+        .set({ failedLogins: 0, lockedUntil: new Date(Date.now() + LOGIN_LOCK.minutes * 60_000) })
+        .where(eq(users.id, id));
+      return { locked: true };
+    }
+    return { locked: false };
+  },
+
+  async clearFailedLogins(id: string) {
+    const db = await getDb();
+    await db.update(users).set({ failedLogins: 0, lockedUntil: null }).where(eq(users.id, id));
   },
 
   async saveChatPolicy(id: string, chatPolicy: ChatPolicy) {

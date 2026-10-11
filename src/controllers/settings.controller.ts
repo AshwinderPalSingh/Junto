@@ -21,6 +21,7 @@ export const SettingsController = {
       companionGenders: user.companionGenders,
       groupPref: user.groupPref,
       chatPolicy: user.chatPolicy,
+      hasPassword: Boolean(user.passwordHash),
       vapidPublicKey: getVapidPublicKey(),
       pushDevices,
       blocked: blocked.map(({ user: b }) => ({ id: b.id, name: displayName(b), photo: presentPhoto(b) })),

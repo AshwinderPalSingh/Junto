@@ -181,6 +181,7 @@ export type SettingsVM = {
   companionGenders: string[];
   groupPref: string;
   chatPolicy: "anyone" | "met" | "nobody";
+  hasPassword: boolean;
   vapidPublicKey: string | null;
   pushDevices: number;
   blocked: { id: string; name: string; photo: PhotoVM }[];

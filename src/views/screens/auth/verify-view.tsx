@@ -13,6 +13,8 @@ type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
 type Props = {
   email: string;
+  /** What the code is for: signing in, finishing sign-up, or resetting a password. */
+  intent: "login" | "signup" | "reset";
   codeLength: number;
   resendAfterSeconds: number;
   ttlMinutes: number;
@@ -20,7 +22,13 @@ type Props = {
   resendCode: Action;
 };
 
-export function VerifyView({ email, codeLength, resendAfterSeconds, ttlMinutes, verifyCode, resendCode }: Props) {
+const COPY = {
+  login: { title: "Check your inbox", after: "" },
+  signup: { title: "Confirm your email", after: " Enter it to finish creating your account." },
+  reset: { title: "Check your inbox", after: " Enter it to set your new password." },
+} as const;
+
+export function VerifyView({ email, intent, codeLength, resendAfterSeconds, ttlMinutes, verifyCode, resendCode }: Props) {
   const [state, action] = useActionState(verifyCode, idleState);
   const [resendState, resendAction] = useActionState(resendCode, idleState);
   const [code, setCode] = useState("");
@@ -48,10 +56,10 @@ export function VerifyView({ email, codeLength, resendAfterSeconds, ttlMinutes, 
       <span className="grid size-11 place-items-center bg-primary text-primary-foreground">
         <KeyRound className="size-5" strokeWidth={1.75} />
       </span>
-      <h1 className="mt-6 text-3xl tracking-[-0.035em]">Check your inbox</h1>
+      <h1 className="mt-6 text-3xl tracking-[-0.035em]">{COPY[intent].title}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         We sent a {codeLength}-digit code to <span className="font-medium text-foreground">{email}</span>. It expires in{" "}
-        {ttlMinutes} minutes. Can&apos;t see it? Check spam or promotions.
+        {ttlMinutes} minutes.{COPY[intent].after} Can&apos;t see it? Check spam or promotions.
       </p>
 
       <form ref={formRef} action={action} className="mt-7 space-y-5">
@@ -93,6 +101,7 @@ export function VerifyView({ email, codeLength, resendAfterSeconds, ttlMinutes, 
         </Link>
         <form action={resendAction}>
           <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="intent" value={intent} />
           <button
             type="submit"
             disabled={cooldown > 0}

@@ -105,9 +105,9 @@
 .dark {
   --background: #151817;
   --foreground: #f5f5f7;
-  --card: rgb(28 28 30 / 0.55);
+  --card: #1c201f;
   --card-foreground: #f5f5f7;
-  --popover: rgb(28 28 30 / 0.82);
+  --popover: #222726;
   --popover-foreground: #f5f5f7;
   --primary: #f5f5f7;
   --primary-foreground: #000000;
@@ -130,15 +130,16 @@
   --chart-4: #3a3a3c;
   --chart-5: #c7c7cc;
 
-  --glass-fill: rgb(44 44 46 / 0.42);
-  --glass-fill-strong: rgb(36 36 38 / 0.78);
-  --glass-gloss: rgb(255 255 255 / 0.07);
-  --glass-edge: rgb(255 255 255 / 0.12);
-  --glass-highlight: rgb(255 255 255 / 0.2);
-  --glass-inner: rgb(255 255 255 / 0.04);
-  --glass-shadow: rgb(0 0 0 / 0.6);
-  --glass-shadow-near: rgb(0 0 0 / 0.35);
-  --glass-sheen: rgb(255 255 255 / 0.16);
+  /* Dark mode has no glass: the "glass" surfaces are solid, flat panels. */
+  --glass-fill: #1c201f;
+  --glass-fill-strong: #222726;
+  --glass-gloss: transparent;
+  --glass-edge: rgb(255 255 255 / 0.09);
+  --glass-highlight: transparent;
+  --glass-inner: transparent;
+  --glass-shadow: rgb(0 0 0 / 0.5);
+  --glass-shadow-near: rgb(0 0 0 / 0.3);
+  --glass-sheen: transparent;
 
   --ambient-a: rgb(255 255 255 / 0.13);
   --ambient-b: rgb(255 255 255 / 0.08);
@@ -479,6 +480,38 @@ body * {
   .auth-form { border-radius: 18px; padding-inline: 22px; }
   .auth-form [data-slot="input-otp-group"] { gap: 4px; }
   .auth-form [data-slot="input-otp-slot"] { width: 32px; height: 46px; }
+}
+
+/* ═══════════════════════════ Dark mode: solid, no glass ═══════════════════════════
+   Light mode keeps its frosted glass. In dark mode nothing is see-through or blurred
+   behind: panels are solid, overlays simply dim the page. */
+.dark *,
+.dark *::before,
+.dark *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.dark [data-slot$="-overlay"] {
+  background-color: rgb(0 0 0 / 0.62);
+}
+.dark .auth-layout {
+  border-color: var(--glass-edge);
+}
+.dark .landing-navBrand,
+.dark .landing-navLink,
+.dark .landing-theme {
+  background: #1c201f;
+  border-color: rgb(255 255 255 / 0.1);
+}
+.dark .landing-navBrand:hover,
+.dark .landing-navLink:hover {
+  background: #262b2a;
+}
+.dark .landing-heroFrame {
+  background: transparent;
+}
+.dark .landing-modeCard {
+  border-color: var(--glass-edge);
 }
 
 /* ═══════════════════════════ Charts ═══════════════════════════ */

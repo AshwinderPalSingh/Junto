@@ -87,14 +87,22 @@ export async function runMaintenance(now = new Date()) {
   }
 }
 
-/** Cheap to call on every request: runs at most every 20 seconds. */
+/**
+ * On serverless hosts (Vercel) there is no long-running process: maintenance
+ * runs only when people use the site, so an idle site lets the database sleep
+ * (and keeps a scale-to-zero database such as Neon's free plan within its hours).
+ */
+const SERVERLESS = Boolean(process.env.VERCEL);
+
+/** Cheap to call on every request: runs at most once a minute per server instance. */
 export async function maybeRunMaintenance(now = new Date()) {
-  if (now.getTime() - state.lastRun < 20_000) return;
+  if (now.getTime() - state.lastRun < 60_000) return;
   await runMaintenance(now);
 }
 
+/** Long-running servers (Docker, Render…) sweep every 30 seconds; serverless hosts don't. */
 export function startMaintenanceLoop() {
-  if (state.timer) return;
+  if (state.timer || SERVERLESS) return;
   state.timer = setInterval(() => void runMaintenance(), 30_000);
   state.timer.unref?.();
 }

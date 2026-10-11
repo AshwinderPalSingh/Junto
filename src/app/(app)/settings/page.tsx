@@ -7,6 +7,7 @@ import {
   deleteAccount,
   removePushSubscription,
   saveChatPolicy,
+  savePassword,
   savePushSubscription,
   sendTestPush,
 } from "@/controllers/settings.actions";
@@ -32,6 +33,7 @@ async function SettingsContent() {
       vm={vm}
       actions={{
         savePreferences,
+        savePassword,
         saveChatPolicy,
         savePushSubscription,
         removePushSubscription,
