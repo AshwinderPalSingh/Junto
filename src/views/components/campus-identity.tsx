@@ -1,5 +1,4 @@
 import { ShieldCheck, UserRound } from "lucide-react";
-import { Button } from "@/views/ui/button";
 
 export function CampusIdentity({ fullName, connected, available }: {
   fullName: string | null; connected: boolean; available: boolean;
@@ -11,11 +10,7 @@ export function CampusIdentity({ fullName, connected, available }: {
       <p className="text-xs text-muted-foreground">University account profile</p>
       <p className="break-words font-semibold">{fullName ?? "Campus member"}</p>
       <p className="text-sm text-muted-foreground">{connected ? "Name supplied by your university account." :
-        available ? "Your full name will come from your university account." : "University profile connection is not enabled yet."}</p>
-      {available && <Button asChild variant="outline" size="sm">
-        {/* A full navigation starts the server-side identity handshake. */}
-        <a href="/auth/campus/start"><ShieldCheck />{connected ? "Refresh university profile" : "Connect university account"}</a>
-      </Button>}
+        available ? "Your Thapar account name is verified during sign-in." : "University sign-in is currently unavailable."}</p>
     </div>
   </div>;
 }

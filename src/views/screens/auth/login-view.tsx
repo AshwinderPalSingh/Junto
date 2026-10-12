@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import { idleState, type ActionState } from "@/lib/action";
 import { FormMessage, SubmitButton, fieldError } from "@/views/components/form-bits";
 import { PasswordInput } from "@/views/components/password-input";
+import { CampusSignIn } from "@/views/components/campus-sign-in";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/views/ui/field";
 import { Input } from "@/views/ui/input";
 
@@ -13,11 +14,12 @@ type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
 
 type Props = {
   domain: string;
+  campusSignIn: boolean;
   signIn: Action;
   requestCode: Action;
 };
 
-export function LoginView({ domain, signIn, requestCode }: Props) {
+export function LoginView({ domain, campusSignIn, signIn, requestCode }: Props) {
   const [passwordState, passwordAction] = useActionState(signIn, idleState);
   const [codeState, codeAction] = useActionState(requestCode, idleState);
   // Controlled, so the email survives a wrong password and is shared with the code option.
@@ -31,7 +33,8 @@ export function LoginView({ domain, signIn, requestCode }: Props) {
         <LogIn className="size-5" strokeWidth={1.75} />
       </span>
       <h1 className="mt-6 text-3xl tracking-[-0.035em]">Sign in to Junto</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Welcome back. Use your campus email and password.</p>
+      <p className="mt-2 text-sm text-muted-foreground">Only @{domain} accounts can sign in.</p>
+      {campusSignIn && <CampusSignIn />}
 
       <form action={passwordAction} className="mt-7 space-y-4">
         <Field data-invalid={Boolean(emailError)}>
@@ -89,8 +92,8 @@ export function LoginView({ domain, signIn, requestCode }: Props) {
       <form action={codeAction} className="space-y-3">
         <input type="hidden" name="email" value={email} />
         <FormMessage state={codeState} />
-        <SubmitButton variant="outline" size="lg" className="w-full" pendingLabel="Sending code…">
-          <Mail /> Email me a sign-in code instead
+        <SubmitButton variant="outline" size="lg" className="w-full px-3" pendingLabel="Sending code…">
+          <Mail /> Email me a sign-in code
         </SubmitButton>
       </form>
 

@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import { idleState, type ActionState } from "@/lib/action";
 import { FormMessage, SubmitButton, fieldError } from "@/views/components/form-bits";
 import { PasswordHint, PasswordInput } from "@/views/components/password-input";
+import { CampusSignIn } from "@/views/components/campus-sign-in";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/views/ui/field";
 import { Input } from "@/views/ui/input";
 
@@ -36,10 +37,12 @@ const COPY = {
 export function PasswordFlowView({
   intent,
   domain,
+  campusSignIn = false,
   action,
 }: {
   intent: "signup" | "reset";
   domain: string;
+  campusSignIn?: boolean;
   action: Action;
 }) {
   const copy = COPY[intent];
@@ -57,7 +60,8 @@ export function PasswordFlowView({
         <IconComponent className="size-5" strokeWidth={1.75} />
       </span>
       <h1 className="mt-6 text-3xl tracking-[-0.035em]">{copy.title}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{copy.lead}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{intent === "signup" && campusSignIn ? `Join with your @${domain} account.` : copy.lead}</p>
+      {intent === "signup" && campusSignIn && <CampusSignIn />}
 
       <form action={formAction} className="mt-7 space-y-4">
         <Field data-invalid={Boolean(fieldError(state, "email"))}>

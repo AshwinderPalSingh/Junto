@@ -21,5 +21,5 @@ export default function SignupPage() {
 
 async function SignupContent() {
   const data = await AuthController.login();
-  return <PasswordFlowView intent="signup" domain={data.domain} action={startPasswordFlow.bind(null, "signup")} />;
+  return <PasswordFlowView intent="signup" domain={data.domain} campusSignIn={data.campusSignIn} action={startPasswordFlow.bind(null, "signup")} />;
 }

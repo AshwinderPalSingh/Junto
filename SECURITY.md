@@ -1,6 +1,6 @@
 # Security Review
 
-Reviewed October 11, 2026. This is targeted code review and regression testing, not a claim that the application is vulnerability-free or an independent penetration test.
+Reviewed October 11, 2026; university sign-in updated October 12, 2026. This is targeted code review and regression testing, not a claim that the application is vulnerability-free or an independent penetration test.
 
 ## University Profile Names
 
@@ -11,11 +11,13 @@ Thapar's public mail DNS currently points to Google. Its [official email circula
 1. Register the exact production redirect URI: `https://junto-lyart-eta.vercel.app/auth/campus/callback`.
 2. Request only `openid email profile`. Configure consent/testing access for university users. University policy may require administrator approval.
 3. In Vercel's server environment, set `CAMPUS_IDENTITY_PROVIDER=google`, `CAMPUS_OIDC_CLIENT_ID`, and `CAMPUS_OIDC_CLIENT_SECRET`. Set `APP_URL=https://junto-lyart-eta.vercel.app`. Redeploy. Do not commit credentials or share them in chat.
-4. Signed-in members connect their university profile from onboarding, Edit Profile, or Settings. The selected account must match the campus mailbox already verified in Junto.
+4. Members choose **Continue with Thapar** on sign-in or sign-up. A validated Google university profile signs in an existing account or creates a new one and supplies its full name in the same flow. Password/email-code sign-in automatically completes university verification for members without a verified profile. There is no separate profile-connection step in settings or onboarding.
+
+Access is fixed to the exact `thapar.edu` domain, including password/email-code sign-in and existing sessions. `ALLOWED_EMAIL_DOMAINS` cannot broaden this boundary. Personal Gmail, other institutions, subdomains, unverified email claims, and Google accounts without the matching Workspace `hd` claim are rejected. Google sign-in does not bypass suspension or change an existing provider subject. New and existing users are updated atomically; passwords, preferences, photos, activity, and moderation data are preserved.
 
 Microsoft is supported when explicitly configured with the university's tenant UUID and its own application credentials. Never use `common` or `organizations` as the trusted tenant.
 
-The connection uses the maintained `openid-client` library: authorization-code flow, S256 PKCE, random state and ID-token nonce, issuer/audience/expiry checks, JWT signature validation, and subject-matched UserInfo. Each ten-minute transaction is bound to the signed-in account and session and consumed atomically once. Google requires a verified email and the exact university hosted domain; Microsoft requires the exact tenant. Access/refresh/ID tokens are not stored. Provider subject IDs are unique and cannot silently replace an existing linked identity.
+The sign-in uses the maintained `openid-client` library: authorization-code flow, S256 PKCE, random state and ID-token nonce, issuer/audience/expiry checks, JWT signature validation, and subject-matched UserInfo. Each ten-minute transaction is bound to an anonymous browser token or the member's existing session and consumed atomically once. Google requires a verified email and the exact university hosted domain; Microsoft requires the exact tenant. Access/refresh/ID tokens are not stored. Provider subject IDs are unique and cannot silently replace an existing linked identity.
 
 A provider's `name` is a display-name claim, not proof of a legal name. Names never determine authorization, moderator roles, campus membership, or ratings. See [Google's OIDC guidance](https://developers.google.com/identity/openid-connect/openid-connect) and [Microsoft's claim-validation guidance](https://learn.microsoft.com/en-us/entra/identity-platform/claims-validation).
 

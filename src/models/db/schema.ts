@@ -132,10 +132,10 @@ export const rateLimits = pgTable("rate_limits", {
   resetAt: ts("reset_at").notNull(),
 }, (t) => [index("rate_limits_expiry_idx").on(t.resetAt)]);
 
-/** Short-lived profile-link transactions, bound to the initiating session. */
+/** Short-lived sign-in transactions, bound to a browser or existing session. */
 export const identityFlows = pgTable("identity_flows", {
   stateHash: text("state_hash").primaryKey(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
   sessionHash: text("session_hash").notNull(),
   verifier: text("verifier").notNull(),
   nonce: text("nonce").notNull(),

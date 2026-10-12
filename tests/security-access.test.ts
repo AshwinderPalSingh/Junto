@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { getDb } from "@/models/db/client";
-import { participations, plans } from "@/models/db/schema";
+import { participations, plans, sessions } from "@/models/db/schema";
+import { eq } from "drizzle-orm";
 import { BlockModel } from "@/models/block.model";
 import { IdentityModel } from "@/models/identity.model";
 import { UserModel, type User } from "@/models/user.model";
@@ -10,19 +11,29 @@ import { reportMember } from "@/controllers/safety.actions";
 import { idleState } from "@/lib/action";
 import { closeDatabase, makeMember, useFreshDatabase } from "./helpers/db";
 
-const state = vi.hoisted(() => ({ viewer: null as User | null, token: "test-browser-session", cookie: "", configured: true,
-  grant: vi.fn(), userInfo: vi.fn() }));
+const state = vi.hoisted(() => ({ viewer: null as User | null, token: "test-browser-session" as string | null, cookie: "", configured: true,
+  grant: vi.fn(), userInfo: vi.fn(), setCookie: vi.fn(), writeSession: vi.fn() }));
 vi.mock("@/controllers/guards", () => ({ currentUser: async () => state.viewer, requireMember: async () => state.viewer }));
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
-vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => ({ value: state.cookie }), set: vi.fn() }) }));
-vi.mock("@/lib/session", () => ({ readSessionCookie: async () => state.token }));
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => ({ value: state.cookie }), set: state.setCookie }) }));
+vi.mock("@/lib/session", () => ({ readSessionCookie: async () => state.token, requestIp: async () => "local",
+  requestUserAgent: async () => "identity-test", writeSessionCookie: state.writeSession }));
 vi.mock("@/lib/campus-oidc", () => ({ campusIdentityConfigured: () => state.configured,
   campusCallbackUrl: () => "https://junto.test/auth/campus/callback", campusOidc: async () => ({}) }));
-vi.mock("openid-client", () => ({ authorizationCodeGrant: state.grant, fetchUserInfo: state.userInfo }));
+vi.mock("openid-client", () => ({ authorizationCodeGrant: state.grant, fetchUserInfo: state.userInfo,
+  randomState: () => "generated-state", randomNonce: () => "generated-nonce", randomPKCECodeVerifier: () => "generated-verifier",
+  calculatePKCECodeChallenge: async () => "generated-challenge",
+  buildAuthorizationUrl: (_config: unknown, params: Record<string, string>) => {
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+    return url;
+  },
+}));
 
 beforeAll(async () => { await useFreshDatabase(); process.env.CAMPUS_IDENTITY_PROVIDER = "google"; });
 afterAll(closeDatabase);
-beforeEach(() => { state.viewer = null; state.cookie = ""; state.configured = true; state.grant.mockReset(); state.userInfo.mockReset(); });
+beforeEach(() => { state.viewer = null; state.token = "test-browser-session"; state.cookie = ""; state.configured = true;
+  state.grant.mockReset(); state.userInfo.mockReset(); state.setCookie.mockReset(); state.writeSession.mockReset(); });
 afterEach(() => vi.useRealTimers());
 
 describe("private avatar authorization", () => {
@@ -76,7 +87,7 @@ describe("university identity callback", () => {
   });
   it("requires PKCE, state, nonce, matching UserInfo subject and consumes the callback once", async () => {
     const member = await makeMember(); state.viewer = member; state.cookie = "bound-state";
-    await IdentityModel.begin({ state: state.cookie, userId: member.id, sessionToken: state.token, nonce: "expected-nonce", verifier: "expected-verifier", provider: "google" });
+    await IdentityModel.begin({ state: state.cookie, userId: member.id, sessionToken: state.token!, nonce: "expected-nonce", verifier: "expected-verifier", provider: "google" });
     const claims = { sub: "provider-subject", email: member.email, email_verified: true, hd: "thapar.edu", name: "University Full Name" };
     state.grant.mockResolvedValue({ access_token: "temporary-token", claims: () => claims });
     state.userInfo.mockResolvedValue(claims);
@@ -92,10 +103,93 @@ describe("university identity callback", () => {
   });
   it("does not accept another university user's profile", async () => {
     const member = await makeMember(); state.viewer = member; state.cookie = "wrong-account";
-    await IdentityModel.begin({ state: state.cookie, userId: member.id, sessionToken: state.token, nonce: "nonce", verifier: "verifier", provider: "google" });
+    await IdentityModel.begin({ state: state.cookie, userId: member.id, sessionToken: state.token!, nonce: "nonce", verifier: "verifier", provider: "google" });
     const claims = { sub: "other-subject", email: "other-person@thapar.edu", email_verified: true, hd: "thapar.edu", name: "Wrong Person" };
     state.grant.mockResolvedValue({ access_token: "token", claims: () => claims }); state.userInfo.mockResolvedValue(claims);
     expect((await IdentityController.callback(new Request("https://junto.test/auth/campus/callback?state=wrong-account&code=secret"))).status).toBe(400);
     expect((await UserModel.findById(member.id))!.identityVerifiedAt).toBeNull();
+  });
+
+  it("starts anonymous sign-in with a browser binding, PKCE and the Thapar domain hint", async () => {
+    state.token = null;
+    const response = await IdentityController.start();
+    expect(response.status).toBe(303);
+    const url = new URL(response.headers.get("location")!);
+    expect(url.searchParams.get("hd")).toBe("thapar.edu");
+    expect(url.searchParams.get("scope")).toBe("openid email profile");
+    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(url.searchParams.has("login_hint")).toBe(false);
+    const [, cookie, options] = state.setCookie.mock.calls[0];
+    expect(cookie).toMatch(/^generated-state\.[a-zA-Z0-9_-]+$/);
+    expect(options).toMatchObject({ httpOnly: true, sameSite: "lax", path: "/auth/campus", maxAge: 600 });
+  });
+
+  let callbackCounter = 0;
+  async function anonymousCallback(claims: Record<string, unknown>, info: Record<string, unknown> = claims) {
+    callbackCounter += 1;
+    const flowState = `anonymous-${callbackCounter}`;
+    state.viewer = null; state.token = null; state.cookie = `${flowState}.browser-secret`;
+    await IdentityModel.begin({ state: flowState, userId: null, sessionToken: "browser-secret", nonce: "nonce", verifier: "verifier", provider: "google" });
+    state.grant.mockResolvedValue({ access_token: "temporary-token", claims: () => claims });
+    state.userInfo.mockResolvedValue(info);
+    return IdentityController.callback(new Request(`https://junto.test/auth/campus/callback?state=${flowState}&code=temporary-code`));
+  }
+
+  const campusClaims = { sub: "new-google-member", email: "new-google-member@thapar.edu", email_verified: true,
+    hd: "thapar.edu", name: "Complete University Name", given_name: "Complete", family_name: "University Name" };
+
+  it("creates a named Thapar account and session directly from Google sign-in", async () => {
+    const response = await anonymousCallback(campusClaims);
+    expect(response.status).toBe(303);
+    expect(new URL(response.headers.get("location")!).pathname).toBe("/onboarding");
+    const user = await UserModel.findByEmail(campusClaims.email);
+    expect(user).toMatchObject({ verifiedFullName: campusClaims.name, identitySubject: campusClaims.sub, role: "member" });
+    const rows = await (await getDb()).select().from(sessions).where(eq(sessions.userId, user!.id));
+    expect(rows).toHaveLength(1);
+    expect(state.writeSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns an existing member to the board without replacing their preferences or password", async () => {
+    const member = await makeMember();
+    await UserModel.setPassword(member.id, "existing-password-hash");
+    const response = await anonymousCallback({ ...campusClaims, email: member.email, sub: "existing-google-member" });
+    expect(response.status).toBe(303);
+    expect(new URL(response.headers.get("location")!).pathname).toBe("/board");
+    expect(await UserModel.findById(member.id)).toMatchObject({ passwordHash: "existing-password-hash",
+      gender: member.gender, interests: member.interests, photoUpdatedAt: member.photoUpdatedAt });
+  });
+
+  it("rejects personal mail, other domains, lookalikes, unverified claims and mismatched profile subjects", async () => {
+    for (const email of ["outside@gmail.com", "outside@other.edu", "outside@thapar.edu.evil.com", "outside@students.thapar.edu"]) {
+      expect((await anonymousCallback({ ...campusClaims, email, sub: email, hd: email.split("@")[1] })).status).toBe(400);
+      expect(await UserModel.findByEmail(email)).toBeNull();
+    }
+    for (const changes of [{ email_verified: false }, { hd: "gmail.com" }, { hd: undefined }]) {
+      expect((await anonymousCallback({ ...campusClaims, ...changes, email: "bad-claims@thapar.edu" })).status).toBe(400);
+    }
+    expect((await anonymousCallback({ ...campusClaims, email: "bad-subject@thapar.edu" }, { ...campusClaims, sub: "someone-else" })).status).toBe(400);
+    expect(state.writeSession).not.toHaveBeenCalled();
+  });
+
+  it("never substitutes UserInfo security claims for validated ID token claims", async () => {
+    const claims = { ...campusClaims, email: "unverified-token@thapar.edu", sub: "unverified-token", email_verified: false };
+    expect((await anonymousCallback(claims, { ...claims, email_verified: true })).status).toBe(400);
+    expect(await UserModel.findByEmail(claims.email)).toBeNull();
+    expect(state.writeSession).not.toHaveBeenCalled();
+  });
+
+  it("requires the initiating browser token even when an attacker knows the state", async () => {
+    await IdentityModel.begin({ state: "stolen-state", userId: null, sessionToken: "real-browser", nonce: "nonce", verifier: "verifier", provider: "google" });
+    state.token = null; state.cookie = "stolen-state.other-browser";
+    expect((await IdentityController.callback(new Request("https://junto.test/auth/campus/callback?state=stolen-state&code=code"))).status).toBe(400);
+    expect(state.grant).not.toHaveBeenCalled();
+    expect(await IdentityModel.consume("stolen-state", null, "real-browser", "google")).not.toBeNull();
+  });
+
+  it("cannot use Google sign-in to bypass an account suspension", async () => {
+    const member = await makeMember(); await UserModel.setStatus(member.id, "suspended");
+    expect((await anonymousCallback({ ...campusClaims, email: member.email, sub: "suspended-google" })).status).toBe(400);
+    expect(state.writeSession).not.toHaveBeenCalled();
+    expect((await UserModel.findById(member.id))!.status).toBe("suspended");
   });
 });

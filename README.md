@@ -66,8 +66,8 @@ on `/api/health`.
 
 | Area | Features |
 |---|---|
-| **Verified access** | Only allowed campus domains (`@thapar.edu`). Sign in with **email + password** or a **one-time email code**. Creating an account and resetting a password both confirm the inbox with a code, and the new password only applies in the browser that chose it. Passwords are hashed with scrypt; 5 wrong tries pause password sign-in for 15 minutes; a reset or change signs out other devices. Codes are hashed, expire in 10 minutes, allow 5 tries, have a 30-second resend cooldown and are rate-limited per address and network. Sessions are database-backed httpOnly cookies. |
-| **Profile** | Full name supplied by a connected university account, never guessed from the email address or entered manually. Until university OIDC is configured and connected, the display name is "Campus member". Year, department including Computer Science and Engineering and Faculty, up to 5 interests, vibe, short bio and **exactly one mandatory profile photo**: chosen, dropped, pasted or taken with the camera, then cropped in the browser and re-encoded on the server with location data stripped. Stored in Postgres and served only to onboarded members, with no browser caching. Gender is locked after setup. |
+| **Verified access** | Only exact `@thapar.edu` accounts. **Continue with Thapar** uses Google to sign in or create an account and retrieves its full name in one flow. **Email + password** and **one-time email codes** remain available; members without a verified profile complete university verification during sign-in when OAuth is configured. Creating an account and resetting a password confirm the inbox with a code, and the new password only applies in the browser that chose it. Passwords are hashed with scrypt; 5 wrong tries pause password sign-in for 15 minutes; a reset or change signs out other devices. Codes are hashed, expire in 10 minutes, allow 5 tries, have a 30-second resend cooldown and are rate-limited per address and network. Sessions are database-backed httpOnly cookies. |
+| **Profile** | Full name supplied by university sign-in, never guessed from the email address or entered manually. No separate account-connection step. Without configured university OIDC, the display name is "Campus member". Year, department including Computer Science and Engineering and Faculty, up to 5 interests, vibe, short bio and **exactly one mandatory profile photo**: chosen, dropped, pasted or taken with the camera, then cropped in the browser and re-encoded on the server with location data stripped. Stored in Postgres and served only to onboarded members, with no browser caching. Gender is locked after setup. |
 | **Private preferences** | Who you're comfortable meeting, and one-on-one versus groups. Never shown on any profile; used as hard filters in both directions. |
 | **Board** | Plans happening soon and later, filters by activity, one-tap posting, "N people free right now", your upcoming meetups. |
 | **Post a plan** | Activity, a public campus spot, now / +15 / +30 / +60 min / custom time, duration, 1–5 companions, who can join, a note and a live preview. |
@@ -148,10 +148,10 @@ Every variable is described in `.env.example`.
 | `DATABASE_URL` | yes | PostgreSQL connection string |
 | `APP_URL` | yes in production | public origin, e.g. `https://junto.example.com` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | yes in production (or `RESEND_API_KEY`) | sign-in emails |
-| `ALLOWED_EMAIL_DOMAINS` | no (`thapar.edu`) | who can sign up |
+| `ALLOWED_EMAIL_DOMAINS` | legacy | access is fixed to `thapar.edu`; this setting cannot allow other domains |
 | `CAMPUS_IDENTITY_PROVIDER` | optional | `google` (Thapar's public MX records point to Google) or `microsoft` |
-| `CAMPUS_OIDC_CLIENT_ID` | for profile names | university OIDC application's client ID |
-| `CAMPUS_OIDC_CLIENT_SECRET` | for profile names | client secret, server-only |
+| `CAMPUS_OIDC_CLIENT_ID` | for university sign-in | university OIDC application's client ID |
+| `CAMPUS_OIDC_CLIENT_SECRET` | for university sign-in | client secret, server-only |
 | `CAMPUS_MICROSOFT_TENANT_ID` | Microsoft only | exact university tenant UUID; never a multi-tenant wildcard |
 | `ADMIN_EMAILS` | no | who gets the moderator role on sign-in |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | no | Web Push (`npm run setup` generates the keys) |

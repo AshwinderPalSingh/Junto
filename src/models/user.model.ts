@@ -1,7 +1,7 @@
 import "server-only";
 import { and, desc, eq, ilike, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "./db/client";
-import type { UniversityProfile } from "@/lib/campus-identity";
+import { isCampusEmail, type UniversityProfile } from "@/lib/campus-identity";
 import { photos, sessions, users, type ChatPolicy, type UserRow } from "./db/schema";
 import { sha256 } from "@/lib/crypto";
 import { DomainError } from "@/lib/errors";
@@ -59,6 +59,7 @@ export const UserModel = {
 
   /** Signs in an existing member or creates a brand-new one. */
   async findOrCreate(email: string, role: "member" | "admin") {
+    if (!isCampusEmail(email)) throw new DomainError("Use your @thapar.edu email to sign in.");
     const db = await getDb();
     await db.insert(users).values({ email, role }).onConflictDoNothing({ target: users.email });
     const user = await UserModel.findByEmail(email);
@@ -67,6 +68,27 @@ export const UserModel = {
       await db.update(users).set({ role: "admin" }).where(eq(users.id, user.id));
       user.role = "admin";
     }
+    return user;
+  },
+
+  /** Upsert the verified profile atomically, preserving all existing member data. */
+  async signInWithIdentity(email: string, profile: UniversityProfile, role: "member" | "admin") {
+    if (!isCampusEmail(email)) throw new DomainError("Use your @thapar.edu email to sign in.");
+    const db = await getDb();
+    const identity = {
+      firstName: profile.givenName, lastName: profile.familyName, verifiedFullName: profile.fullName,
+      identityProvider: profile.provider, identitySubject: profile.subject,
+      identityVerifiedAt: new Date(), updatedAt: new Date(),
+    };
+    const [user] = await db.insert(users).values({ email, role, ...identity }).onConflictDoUpdate({
+      target: users.email,
+      set: { ...identity, role: role === "admin" ? "admin" : users.role },
+      setWhere: and(eq(users.status, "active"), or(
+        isNull(users.identitySubject),
+        and(eq(users.identityProvider, profile.provider), eq(users.identitySubject, profile.subject)),
+      )),
+    }).returning();
+    if (!user) throw new DomainError("This account cannot sign in with this university profile.");
     return user;
   },
 

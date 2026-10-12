@@ -1,0 +1,1 @@
+ALTER TABLE "identity_flows" ALTER COLUMN "user_id" DROP NOT NULL;

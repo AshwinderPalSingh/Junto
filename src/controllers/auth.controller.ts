@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { RULES } from "@/config/app";
 import { allowedEmailDomains } from "@/lib/env";
+import { campusIdentityConfigured } from "@/lib/campus-oidc";
 import { isOnboarded } from "@/models/user.model";
 import { currentUser } from "./guards";
 
@@ -24,7 +25,7 @@ async function leaveIfSignedIn() {
 export const AuthController = {
   async login() {
     await leaveIfSignedIn();
-    return { domain: allowedEmailDomains()[0] ?? "thapar.edu" };
+    return { domain: allowedEmailDomains()[0] ?? "thapar.edu", campusSignIn: campusIdentityConfigured() };
   },
 
   async verify(searchParams: Promise<Record<string, string | string[] | undefined>>) {

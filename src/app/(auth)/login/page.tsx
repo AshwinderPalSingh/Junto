@@ -21,5 +21,5 @@ export default function LoginPage() {
 
 async function LoginContent() {
   const data = await AuthController.login();
-  return <LoginView domain={data.domain} signIn={signInWithPassword} requestCode={requestCode} />;
+  return <LoginView domain={data.domain} campusSignIn={data.campusSignIn} signIn={signInWithPassword} requestCode={requestCode} />;
 }

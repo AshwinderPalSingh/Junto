@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { CAMPUS_EMAIL_DOMAIN } from "./campus-identity";
 
 /**
  * Environment configuration. Parsed lazily (at first use, not at import) so a
@@ -30,7 +31,7 @@ const schema = z.object({
   DATABASE_URL: optional,
   /** Max connections in this server's pool. */
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
-  /** Comma-separated list of email domains allowed to sign up. */
+  /** Legacy setting. Campus access is fixed to thapar.edu in code. */
   ALLOWED_EMAIL_DOMAINS: z.string().default("thapar.edu"),
   /** Comma-separated list of emails that get the moderator role on sign-in. */
   ADMIN_EMAILS: z.string().default(""),
@@ -76,7 +77,7 @@ const list = (value: string) =>
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
-export const allowedEmailDomains = () => list(env().ALLOWED_EMAIL_DOMAINS);
+export const allowedEmailDomains = () => [CAMPUS_EMAIL_DOMAIN];
 export const adminEmails = () => list(env().ADMIN_EMAILS);
 export const isProduction = () => env().NODE_ENV === "production";
 

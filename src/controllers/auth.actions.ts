@@ -5,6 +5,7 @@ import { z } from "zod";
 import { failure, invalid, success, type ActionState } from "@/lib/action";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { adminEmails, allowedEmailDomains } from "@/lib/env";
+import { campusIdentityConfigured } from "@/lib/campus-oidc";
 import { isDomainError } from "@/lib/errors";
 import { sendLoginCode, type CodeIntent } from "@/lib/mailer";
 import { burnPasswordCheck, hashPassword, newPasswordSchema, verifyPassword } from "@/lib/password";
@@ -79,6 +80,7 @@ async function startSession(user: User, opts: { signOutEverywhere?: boolean } = 
   if (opts.signOutEverywhere) await SessionModel.destroyAllForUser(user.id);
   const session = await SessionModel.create(user.id, await requestUserAgent());
   await writeSessionCookie(session.token, session.expiresAt);
+  if (campusIdentityConfigured() && !user.identityVerifiedAt) redirect("/auth/campus/start");
   redirect(isOnboarded(user) ? "/board" : "/onboarding");
 }
 

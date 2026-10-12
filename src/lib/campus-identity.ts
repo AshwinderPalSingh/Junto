@@ -6,6 +6,12 @@ export type UniversityProfile = {
   familyName: string | null;
 };
 
+export const CAMPUS_EMAIL_DOMAIN = "thapar.edu";
+
+export function isCampusEmail(email: string): boolean {
+  return /^[^\s@]+@thapar\.edu$/i.test(email);
+}
+
 function profileText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim().normalize("NFC");
@@ -20,7 +26,7 @@ export function universityProfile(
   const email = typeof claims.email === "string" ? claims.email.trim().toLowerCase() : "";
   const domain = email.split("@")[1];
   const fullName = profileText(claims.name);
-  if (email !== expectedEmail.toLowerCase() || !domains.includes(domain) || !fullName ||
+  if (!isCampusEmail(email) || email !== expectedEmail.toLowerCase() || !domains.includes(domain) || !fullName ||
       typeof claims.sub !== "string" || !claims.sub || claims.sub.length > 255) {
     throw new Error("Use the same university account you verified in Junto.");
   }
@@ -33,4 +39,12 @@ export function universityProfile(
   return { provider, subject: claims.sub, fullName,
     givenName: profileText(claims.given_name) ?? fullName,
     familyName: profileText(claims.family_name) };
+}
+
+/** The provider has already validated these claims before account creation. */
+export function universitySignInProfile(
+  provider: UniversityProfile["provider"], claims: Record<string, unknown>, tenant?: string,
+): UniversityProfile & { email: string } {
+  const email = typeof claims.email === "string" ? claims.email.trim().toLowerCase() : "";
+  return { ...universityProfile(provider, claims, email, [CAMPUS_EMAIL_DOMAIN], tenant), email };
 }

@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
 import { readSessionCookie } from "@/lib/session";
+import { isCampusEmail } from "@/lib/campus-identity";
+import { campusIdentityConfigured } from "@/lib/campus-oidc";
 import { SessionModel } from "@/models/auth.model";
 import { maybeRunMaintenance, startMaintenanceLoop } from "@/models/maintenance";
 import { isOnboarded, UserModel, type User } from "@/models/user.model";
@@ -19,8 +21,8 @@ export const currentUser = cache(async (): Promise<User | null> => {
   if (!token) return null;
   const session = await SessionModel.findValid(token);
   if (!session) return null;
-  let user = await UserModel.findById(session.userId);
-  if (!user || user.status === "deleted") return null;
+  const user = await UserModel.findById(session.userId);
+  if (!user || user.status === "deleted" || !isCampusEmail(user.email)) return null;
   if (user.status === "active" && user.onboardedAt) {
     user.ratingRestrictedUntil = await ReputationModel.assessRestriction(user.id);
   }
@@ -39,6 +41,7 @@ export async function requireMember(): Promise<User> {
   if (!user) redirect("/login");
   if (user.status === "suspended") redirect("/suspended");
   if (user.ratingRestrictedUntil && user.ratingRestrictedUntil > new Date()) redirect("/restricted");
+  if (campusIdentityConfigured() && !user.identityVerifiedAt) redirect("/auth/campus/start");
   if (!isOnboarded(user)) redirect("/onboarding");
   return user;
 }
@@ -48,6 +51,7 @@ export async function requireAccount(): Promise<User> {
   const user = await currentUser();
   if (!user) redirect("/login");
   if (user.status === "suspended") redirect("/suspended");
+  if (campusIdentityConfigured() && !user.identityVerifiedAt) redirect("/auth/campus/start");
   return user;
 }
 
