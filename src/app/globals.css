@@ -430,7 +430,7 @@ body * {
   box-shadow: inset 0 1px 1px rgb(90 31 77 / 0.04);
   border-radius: 12px;
 }
-.dark .auth-backdrop::before { background: linear-gradient(125deg, #302139b8, #402439b3, #172828a1), url("/images/thapar-main.webp") center / cover; }
+.dark .auth-backdrop::before { background: linear-gradient(125deg, #302139b8, #402439b3, #172828a1), url("/images/thapar-courtyard.webp") center / cover; }
 @media (min-width: 640px) { .board-header { margin-inline: -24px; padding-inline: 28px; } }
 .app-topbar {
   border-radius: 0;
@@ -451,7 +451,7 @@ body * {
   position: fixed;
   inset: -12px;
   z-index: -1;
-  background: linear-gradient(125deg, #cf6fa378, #b595d284, #d889906b), url("/images/thapar-main.webp") center / cover;
+  background: linear-gradient(125deg, #cf6fa378, #b595d284, #d889906b), url("/images/thapar-courtyard.webp") center / cover;
 }
 .auth-layout {
   display: grid;

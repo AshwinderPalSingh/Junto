@@ -11,7 +11,7 @@ export function AuthFrame({ children }: { children: React.ReactNode }) {
     <div className="auth-backdrop">
       <div className="auth-layout">
       <aside className="auth-story relative hidden overflow-hidden text-white lg:flex lg:flex-col lg:justify-between lg:p-10">
-        <Image src="/images/thapar-main.webp" alt="Thapar's campus at dusk" fill loading="eager" fetchPriority="high" sizes="50vw" className="object-cover" />
+        <Image src="/images/thapar-courtyard.webp" alt="Thapar's red-brick courtyard in daylight" fill loading="eager" fetchPriority="high" sizes="50vw" className="object-cover" />
         <div aria-hidden="true" className="absolute inset-0 bg-[#281828]/35" />
         <Link href="/" className="relative">
           <Logo />

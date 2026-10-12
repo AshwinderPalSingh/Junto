@@ -113,7 +113,7 @@ export function LandingView() {
       </header>
       <main>
         <section className="landing-hero">
-          <Image src="/images/thapar-main.webp" alt="Thapar's campus building and open-air gathering space at dusk" fill loading="eager" fetchPriority="high" sizes="100vw" className="landing-heroPhoto" />
+          <Image src="/images/thapar-courtyard.webp" alt="Thapar's red-brick courtyard in daylight" fill loading="eager" fetchPriority="high" sizes="100vw" className="landing-heroPhoto" />
           <div className="landing-heroShade" aria-hidden="true" />
           <div className="landing-heroFrame" aria-hidden="true" />
           <div className="landing-heroContent">
@@ -121,7 +121,7 @@ export function LandingView() {
             <h1 className="landing-heroTitle">{APP.name}</h1>
             <p className="landing-heroHeadline">Don&apos;t do it alone.<br />Find someone to do it with.</p>
             <div className="landing-heroMoment" aria-hidden="true">
-              <span className="landing-photoChip"><Image src="/images/thapar-market.webp" alt="" fill sizes="140px" /></span>
+              <span className="landing-photoChip"><Image src="/images/student-walk.webp" alt="" fill sizes="140px" /></span>
               <MessageCircle size={30} strokeWidth={1.4} />
               <span>One plan. A little more together.</span>
             </div>
@@ -156,7 +156,7 @@ export function LandingView() {
                 <article className="landing-modeCard">
                   <div className="landing-modeTop"><span>0{i + 1}</span><ModeIcon size={22} strokeWidth={1.5} /></div>
                   <h3>{title}</h3>
-                  <div className="landing-modePhoto"><Image src={["/images/thapar-market.webp", "/images/thapar-library.webp", "/images/thapar-main.webp"][i]} alt={["Students at a campus market", "A shared study table in the Thapar library", "Thapar's campus at dusk"][i]} fill sizes="(max-width: 700px) 90vw, 33vw" /></div>
+                  <div className="landing-modePhoto"><Image src={["/images/tea-together.webp", "/images/student-walk.webp", "/images/thapar-library.webp"][i]} alt={["People enjoying tea together", "Friends taking a walk together", "A shared study table in the Thapar library"][i]} fill sizes="(max-width: 700px) 90vw, 33vw" /></div>
                   <p>{body}</p>
                 </article>
               </Reveal>

@@ -73,7 +73,7 @@ export function BoardView({ vm }: { vm: BoardVM }) {
       )}
 
       <header className="board-header relative isolate overflow-hidden px-6 py-8 text-white animate-glass-in">
-        <Image src="/images/thapar-main.webp" alt="Thapar campus" fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 768px" className="-z-20 object-cover object-[center_55%]" />
+        <Image src="/images/thapar-courtyard.webp" alt="Thapar's red-brick courtyard" fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 768px" className="-z-20 object-cover object-[center_55%]" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[#211324]/50" />
         <p className="label-caps text-white/85">
           {vm.greeting}, {vm.firstName}

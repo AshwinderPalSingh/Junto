@@ -2,7 +2,6 @@
 
 import { ArrowLeft, Eye, MessageCircleOff, Pencil, Settings } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import type { ActionState } from "@/lib/action";
 import { cn } from "@/lib/utils";
 import { RULES } from "@/config/app";
@@ -45,13 +44,7 @@ export function ProfileView({
       )}
 
       <section className="glass-strong relative animate-glass-in overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="relative h-36 overflow-hidden border-b border-border bg-primary"
-        >
-          <Image src="/images/thapar-main.webp" alt="" fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 768px" className="object-cover object-[center_40%]" />
-        </div>
-        <div className="relative -mt-16 px-6 pb-7 text-center">
+        <div className="relative px-6 py-7 text-center sm:py-9">
           <MemberAvatar
             photo={m.photo}
             name={m.name}
