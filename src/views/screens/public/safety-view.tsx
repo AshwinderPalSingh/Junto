@@ -44,7 +44,7 @@ const TIPS = [
 ];
 
 /** Public safety centre and community guidelines. */
-export function SafetyView() {
+export function SafetyView({ returnHref }: { returnHref: string }) {
   return (
     <div className="mx-auto max-w-3xl px-5 pt-6 pb-20">
       <header className="flex items-center justify-between">
@@ -52,7 +52,7 @@ export function SafetyView() {
           <Logo />
         </Link>
         <Link
-          href="/board"
+          href={returnHref}
           className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" /> Back to {APP.name}
@@ -115,7 +115,7 @@ export function SafetyView() {
           <h2 className="mt-4 text-xl tracking-[-0.025em]">How we keep the community verified</h2>
           <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
             {[
-              `Only ${APP.campusShort} email addresses can join, confirmed with a one-time code.`,
+              `Only ${APP.campusShort} email addresses can join, verified through university sign-in or an email code.`,
               "Members must be 18 or older and agree to these guidelines.",
               "Everyone has exactly one clear profile photo, and moderators review new photos.",
               "Gender is locked after setup so preferences can't be gamed.",

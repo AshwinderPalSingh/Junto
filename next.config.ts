@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   reactCompiler: true,
   // sharp and web-push use native/Node APIs: load them from node_modules at runtime.
-  serverExternalPackages: ["sharp", "web-push"],
+  serverExternalPackages: ["sharp", "web-push", "@tensorflow-models/face-detection", "@tensorflow/tfjs-core", "@tensorflow/tfjs-converter", "@tensorflow/tfjs-backend-cpu"],
+  outputFileTracingIncludes: { "/*": ["./models/face-detection/**/*"] },
   poweredByHeader: false,
   // Hide the Next.js development toolbar (the floating "N" button in `next dev`).
   devIndicators: false,

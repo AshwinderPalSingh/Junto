@@ -23,6 +23,10 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "@tensorflow-models/face-detection": "1.0.3",
+    "@tensorflow/tfjs-backend-cpu": "4.22.0",
+    "@tensorflow/tfjs-converter": "4.22.0",
+    "@tensorflow/tfjs-core": "4.22.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "drizzle-orm": "^0.45.4",

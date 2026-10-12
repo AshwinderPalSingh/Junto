@@ -35,6 +35,13 @@ export const currentUser = cache(async (): Promise<User | null> => {
   return user;
 });
 
+/** Public and sign-in pages send members back to their current account state. */
+export function accountHome(user: User): string {
+  if (user.status === "suspended") return "/suspended";
+  if (user.ratingRestrictedUntil && user.ratingRestrictedUntil > new Date()) return "/restricted";
+  return isOnboarded(user) ? "/board" : "/onboarding";
+}
+
 /** Signed-in, active, fully onboarded member — or a redirect to wherever they need to go. */
 export async function requireMember(): Promise<User> {
   const user = await currentUser();

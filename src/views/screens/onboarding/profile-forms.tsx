@@ -263,6 +263,8 @@ export function PhotoUploader({
   const [dragging, setDragging] = useState(false);
   const [opening, setOpening] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  useEffect(() => () => { if (source) URL.revokeObjectURL(source); }, [source]);
+  useEffect(() => () => { if (localPreview) URL.revokeObjectURL(localPreview); }, [localPreview]);
 
   const shown =
     pending && localPreview
@@ -355,8 +357,9 @@ export function PhotoUploader({
             )}
           </div>
           {pending && (
-            <div className="absolute inset-0 grid place-items-center bg-background/60 backdrop-blur-sm">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/60 backdrop-blur-sm" role="status">
               <Spinner className="size-6" />
+              <span className="text-xs">Checking photo...</span>
             </div>
           )}
         </div>
@@ -382,7 +385,7 @@ export function PhotoUploader({
           <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
             <Button type="button" variant={shown ? "outline" : "default"} onClick={openPicker} disabled={pending}>
               {opening ? <Spinner /> : shown ? <Upload /> : <ImagePlus />}
-              {opening ? "Opening…" : shown ? "Choose a different photo" : "Choose photo"}
+              {opening ? "Opening…" : shown ? "Change photo" : "Choose photo"}
             </Button>
             <Button type="button" variant="outline" onClick={() => setCamera(true)} disabled={pending}>
               <Camera /> Take a photo
@@ -418,7 +421,7 @@ export function PhotoUploader({
       </p>
 
       {footer?.(!pending && (state.status === "success" || Boolean(photo.url && !photo.rejected)))}
-      <PhotoCropDialog src={source} onCancel={() => setSource(null)} onConfirm={upload} />
+      <PhotoCropDialog key={source ?? "closed"} src={source} onCancel={() => setSource(null)} onConfirm={upload} />
       {camera && (
         <CameraCaptureDialog
           onCancel={() => setCamera(false)}

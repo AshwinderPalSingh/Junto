@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { PROTECTED_PREFIXES, SESSION_COOKIE } from "@/lib/constants";
 import { randomBytes } from "node:crypto";
 import { contentSecurityPolicy } from "@/lib/content-security-policy";
+import { canonicalNavigation } from "@/lib/canonical-origin";
 
 /**
  * Optimistic gate: bounce visitors without a session cookie to /login before
@@ -9,6 +10,13 @@ import { contentSecurityPolicy } from "@/lib/content-security-policy";
  * suspended or still onboarding?) is done by the controllers.
  */
 export function proxy(request: NextRequest) {
+  const canonical = canonicalNavigation(request.nextUrl, request.method);
+  if (canonical) {
+    const response = NextResponse.redirect(canonical, 303);
+    response.headers.set("Cache-Control", "private, no-store");
+    response.headers.set("Referrer-Policy", "no-referrer");
+    return response;
+  }
   const { pathname } = request.nextUrl;
   const needsSession = PROTECTED_PREFIXES.some((prefix) =>
     prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix || pathname.startsWith(`${prefix}/`),

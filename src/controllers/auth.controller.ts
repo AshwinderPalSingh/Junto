@@ -4,8 +4,7 @@ import { z } from "zod";
 import { RULES } from "@/config/app";
 import { allowedEmailDomains } from "@/lib/env";
 import { campusIdentityConfigured } from "@/lib/campus-oidc";
-import { isOnboarded } from "@/models/user.model";
-import { currentUser } from "./guards";
+import { accountHome, currentUser } from "./guards";
 
 export const emailSchema = z
   .string()
@@ -18,7 +17,7 @@ export const codeIntentSchema = z.enum(["login", "signup", "reset"]).catch("logi
 /** Signed-in members don't need the sign-in screens. */
 async function leaveIfSignedIn() {
   const user = await currentUser();
-  if (user) redirect(isOnboarded(user) ? "/board" : "/onboarding");
+  if (user) redirect(accountHome(user));
 }
 
 /** GET handlers for the sign-in screens (/login, /signup, /login/reset, /login/verify). */

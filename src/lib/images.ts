@@ -8,7 +8,7 @@ const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp", "heif", "avif"]);
 /**
  * Normalises an uploaded profile photo:
  * - checks it is a real image of a sensible size,
- * - fixes orientation, centre-crops to a square, re-encodes to WebP,
+ * - fixes orientation, validates the face, crops around it and re-encodes to WebP,
  * - strips all metadata (EXIF can contain GPS coordinates).
  */
 export async function processProfilePhoto(input: Buffer) {
@@ -31,9 +31,22 @@ export async function processProfilePhoto(input: Buffer) {
   }
 
   const side = RULES.photo.outputSide;
-  const image = await sharp(input, options)
+  const normalized = await sharp(input, options)
     .rotate()
-    .resize(side, side, { fit: "cover", position: sharp.strategy.attention })
+    .resize(side, side, { fit: "inside", withoutEnlargement: true })
+    .png()
+    .toBuffer();
+  const { validateProfileFace } = await import("@/lib/face-quality");
+  const { box, imageWidth, imageHeight } = await validateProfileFace(normalized);
+  const cropSide = Math.min(imageWidth, imageHeight);
+  if (Math.max(box.width, box.height) > cropSide) {
+    throw new DomainError("Your face won't fit in the square photo. Zoom out a little and keep your whole face visible.");
+  }
+  const left = Math.max(0, Math.min(imageWidth - cropSide, Math.round(box.xMin + box.width / 2 - cropSide / 2)));
+  const top = Math.max(0, Math.min(imageHeight - cropSide, Math.round(box.yMin + box.height / 2 - cropSide / 2)));
+  const image = await sharp(normalized)
+    .extract({ left, top, width: cropSide, height: cropSide })
+    .resize(side, side)
     .webp({ quality: 82 })
     .toBuffer();
 
